@@ -54,13 +54,6 @@ SDG6/
 
 ## Running Predictions
 
-All-in-one Bash wrapper: **prediction.sh**  
-This script will:
-
-1. Loop over each `.tif` tile in your input folder  
-2. Invoke `python model/predict.py` with the right flags  
-3. Save output masks (NumPy or GeoTIFF) into your designated output directory
-
 ### Usage
 
 ```bash
@@ -70,6 +63,16 @@ python /model/predict.py \
         --csv_path '${CSV_PATH}' \
         --directory '${DIRECTORY}'"
 ```
+
+We also provide an all-in-one Bash wrapper: **prediction.sh**  
+This script will:
+
+1. Loop over each folder containing `.tif` tiles in your input folder list
+2. Invoke `python model/predict.py` with the right flags  
+3. Save output masks (NumPy or GeoTIFF) into your designated output directory
+
+NB: You will need to edit the file paths provided in the `prediction.sh` file.
+
 ---
 
 ## Citation
