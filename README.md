@@ -1,4 +1,4 @@
-# SDG6
+# Tracking Progress Towards SDG 6 Using Satellite Imagery
 
 This repository implements a deep‐learning pipeline to **predict piped water and sewage access** from satellite imagery, using a self‐supervised DINO backbone. See our paper on arXiv for full details: https://arxiv.org/abs/2411.19093.
 
