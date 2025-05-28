@@ -70,14 +70,9 @@ python /model/predict.py \
         --csv_path '${CSV_PATH}' \
         --directory '${DIRECTORY}'"
 ```
-
-#### Flags
-
-_Run `python predict.py --help` to see the full list of options._
-
 ---
 
-## 📚 Citation
+## Citation
 
 If you use this code in your research, please cite:
 
@@ -85,6 +80,6 @@ If you use this code in your research, please cite:
 
 ---
 
-## 📧 Contact
+## Contact
 
 For questions or support, please reach out at **othmane.echchabi@mail.mcgill.ca**.
