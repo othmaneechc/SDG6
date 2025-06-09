@@ -14,8 +14,8 @@ SDG6/
 │   └── utils.py             # helper functions (pre‐/post‐processing)
 │   └── vision_tranformer.py
 │
-├── weights/imbalanced_pw/   # pretrained model weights  
-│   └── checkpoint.pth
+├── weights/imbalanced_pw/   # pretrained model weights (to be downloaded from Zenodo, see bottom of the page)
+│   └── checkpoint.pth       
 │   └── knn_classifier.pth
 │
 └── README.md                # This file
@@ -83,3 +83,8 @@ If you use this code in your research, please cite:
 ## Contact
 
 For questions or support, please reach out at **othmane.echchabi@mail.mcgill.ca**.
+
+## Useful Links
+
+PipedWaterAfrica: Geospatial Dataset of Water and Sanitation Access. https://zenodo.org/records/14740420
+PopulationDensityAfrica: Geospatial Dataset of Population Density Patches. https://zenodo.org/records/15627297
