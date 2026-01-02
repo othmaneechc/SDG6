@@ -1,0 +1,8 @@
+
+# checkpoints
+*.pth
+*.pt
+*.ckpt
+
+# dino artifacts
+src/dino_/
