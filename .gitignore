@@ -6,3 +6,6 @@
 
 # dino artifacts
 src/dino_/
+
+# checkpoints
+src/dino_/*.pth
