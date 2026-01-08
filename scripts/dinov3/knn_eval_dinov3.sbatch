@@ -5,15 +5,14 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=48G
 #SBATCH --time=12:00:00
-#SBATCH --output=/home/mila/e/echchabo/projects/SDG6-Tracker/runs/dinov3-knn-%j.out
-#SBATCH --error=/home/mila/e/echchabo/projects/SDG6-Tracker/runs/dinov3-knn-%j.err
+#SBATCH --output=/dkucc/home/oe23/SDG6-Tracker/runs/dinov3-knn-%j.out
+#SBATCH --error=/dkucc/home/oe23/SDG6-Tracker/runs/dinov3-knn-%j.err
 
 set -euo pipefail
 
-module load cuda/12.1.1
+REPO="/dkucc/home/oe23/SDG6-Tracker"
 
-REPO="/home/mila/e/echchabo/projects/SDG6-Tracker"
-
+# ---- Activate venv -----------------------------------------------------------
 VENV_ACTIVATE="${VENV_ACTIVATE:-${REPO}/.venv/bin/activate}"
 if [[ -f "${VENV_ACTIVATE}" ]]; then
   # shellcheck disable=SC1090
@@ -22,24 +21,53 @@ fi
 
 export PYTHONPATH="${REPO}/src:${PYTHONPATH:-}"
 
-DATA_DIR="${DATA_DIR:-/home/mila/e/echchabo/scratch/PW-m}"
-WEIGHTS_SOURCE="${WEIGHTS_SOURCE:-hf}"
-WEIGHTS_TYPE="${WEIGHTS_TYPE:-auto}"
-K_VALUES="${K_VALUES:-5,10,20}"
-EMBED_BATCH_SIZE="${EMBED_BATCH_SIZE:-256}"
-CKPT_DIR="${CKPT_DIR:-${REPO}/runs/dinov3-knn-cache/$(basename "${DATA_DIR}")/${WEIGHTS_SOURCE}}"
-WEIGHTS="${WEIGHTS:-facebook/dinov3-vitb16-pretrain-lvd1689m}"
+# ---- Shared config -----------------------------------------------------------
+DATA_ROOT="/work/lamlab/data"
+WEIGHTS_SOURCE="hf"
+WEIGHTS_TYPE="auto"
+K_VALUES="5,10,20,50,100"
+EMBED_BATCH_SIZE=256
+CACHE_ROOT="${REPO}/runs/dinov3-knn-cache"
 
-CMD=(
-  python "${REPO}/scripts/run_dinov3_knn.py"
-  --data-dir "${DATA_DIR}"
-  --source "${WEIGHTS_SOURCE}"
-  --weights "${WEIGHTS}"
-  --weights-type "${WEIGHTS_TYPE}"
-  --k-values "${K_VALUES}"
-  --ckpt-dir "${CKPT_DIR}"
-  --embed-batch-size "${EMBED_BATCH_SIZE}"
+# ---- Experiments -------------------------------------------------------------
+DATASETS=(
+  "PW-s"
+  "PW-m"
+  "PW-l"
+  "SW-s"
+  "SW-m"
+  "SW-l"
 )
 
-echo "Running: ${CMD[*]}"
-"${CMD[@]}"
+MODELS=(
+  "facebook/dinov3-vitl16-pretrain-lvd1689m"
+  "facebook/dinov3-vitb16-pretrain-lvd1689m"
+  "facebook/dinov3-vitl16-pretrain-sat493m"
+)
+
+# ---- Run grid ---------------------------------------------------------------
+for DATASET in "${DATASETS[@]}"; do
+  DATA_DIR="${DATA_ROOT}/${DATASET}"
+
+  for WEIGHTS in "${MODELS[@]}"; do
+    MODEL_NAME="$(basename "${WEIGHTS}")"
+    CKPT_DIR="${CACHE_ROOT}/${DATASET}/${MODEL_NAME}"
+
+    echo "============================================================"
+    echo "Dataset : ${DATASET}"
+    echo "Model   : ${WEIGHTS}"
+    echo "Cache   : ${CKPT_DIR}"
+    echo "============================================================"
+
+    python "${REPO}/scripts/run_dinov3_knn.py" \
+      --data-dir "${DATA_DIR}" \
+      --source "${WEIGHTS_SOURCE}" \
+      --weights "${WEIGHTS}" \
+      --weights-type "${WEIGHTS_TYPE}" \
+      --k-values "${K_VALUES}" \
+      --ckpt-dir "${CKPT_DIR}" \
+      --embed-batch-size "${EMBED_BATCH_SIZE}"
+  done
+done
+
+echo "All experiments completed."
