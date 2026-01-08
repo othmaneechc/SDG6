@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Distributed k-NN classification with DINOv3 backbones."""
+"""Distributed k-NN classification with DINOv3 backbones (Hugging Face weights)."""
 
 from __future__ import annotations
 
@@ -15,8 +15,7 @@ from PIL import Image
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import confusion_matrix, classification_report
 from torchvision.transforms import v2 as T
-from datetime import datetime, timedelta
-from dinov3.data.transforms import make_classification_eval_transform
+from datetime import datetime
 
 # -----------------------
 # Limit CPU threading
@@ -34,7 +33,6 @@ os.environ.setdefault("TORCH_NCCL_ASYNC_ERROR_HANDLING", "1")
 os.environ.setdefault("TORCH_NCCL_DEBUG", "WARN")
 os.environ.setdefault("TORCH_NCCL_TIMEOUT", "1800")
 
-REPO_DIR = "/home/mila/e/echchabo/projects/SDG6-Tracker/src/dinov3"
 RUNS_ROOT = Path(__file__).resolve().parents[1] / "runs"
 DEFAULT_MASTER_ADDR = "127.0.0.1"
 DEFAULT_MASTER_PORT = "29500"
@@ -69,16 +67,23 @@ def parse_args() -> argparse.Namespace:
         help="Root directory containing train/val/test splits.",
     )
     parser.add_argument(
+        "--source",
+        type=str,
+        choices=["local", "hf"],
+        default="hf",
+        help="Model source: Hugging Face model id (local repo removed).",
+    )
+    parser.add_argument(
         "--weights",
-        type=Path,
+        type=str,
         required=True,
-        help="Path to the DINOv3 checkpoint (.pth).",
+        help="Hugging Face model id or local snapshot directory.",
     )
     parser.add_argument(
         "--model-name",
         type=str,
-        required=True,
-        help="DINOv3 hub backbone name (e.g., dinov3_vitl16).",
+        default=None,
+        help="Unused for Hugging Face source (kept for backward compatibility).",
     )
     parser.add_argument(
         "--k-values",
@@ -97,7 +102,7 @@ def parse_args() -> argparse.Namespace:
         type=str,
         choices=["auto", "lvd", "sat"],
         default="auto",
-        help="Which normalization stats to use; 'auto' infers from weights filename.",
+        help="Which normalization stats to use; 'auto' uses the HF processor values.",
     )
     parser.add_argument(
         "--log-interval",
@@ -114,10 +119,10 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def resolve_weights_type(weights: Path, override: str) -> str:
+def resolve_weights_type(weights: Path | str, override: str) -> str:
     if override != "auto":
         return override
-    name = weights.name.lower()
+    name = str(weights).lower()
     if "lvd" in name:
         return "lvd"
     if "sat" in name:
@@ -125,15 +130,70 @@ def resolve_weights_type(weights: Path, override: str) -> str:
     return "sat"
 
 
-def make_transform(weights_type: str, resize_size: int = 256) -> T.Compose:
-    mean, std = STATS[weights_type]
+def make_classification_eval_transform(
+    *,
+    resize_size: int = 256,
+    crop_size: int = 224,
+    mean: tuple[float, float, float],
+    std: tuple[float, float, float],
+) -> T.Compose:
+    transforms = [
+        T.ToImage(),
+        T.Resize(resize_size, interpolation=T.InterpolationMode.BICUBIC),
+    ]
+    if crop_size:
+        transforms.append(T.CenterCrop(crop_size))
+    transforms.extend(
+        [
+            T.ToDtype(torch.float32, scale=True),
+            T.Normalize(mean=mean, std=std),
+        ]
+    )
+    return T.Compose(transforms)
+
+
+def make_transform(
+    weights_type: str,
+    resize_size: int = 256,
+    crop_size: int = 224,
+    mean: tuple[float, float, float] | None = None,
+    std: tuple[float, float, float] | None = None,
+) -> T.Compose:
+    if mean is None or std is None:
+        mean, std = STATS[weights_type]
     # Match upstream eval: resize shorter side then center crop
     return make_classification_eval_transform(
         resize_size=resize_size,
-        crop_size=224,
+        crop_size=crop_size,
         mean=mean,
         std=std,
     )
+
+
+def resolve_hf_sizes(processor) -> tuple[int, int]:
+    resize_size = None
+    crop_size = None
+
+    size = getattr(processor, "size", None)
+    if isinstance(size, dict):
+        resize_size = size.get("shortest_edge") or size.get("height") or size.get("width")
+
+    crop = getattr(processor, "crop_size", None)
+    if isinstance(crop, dict):
+        crop_size = crop.get("height") or crop.get("width")
+
+    return int(resize_size or 256), int(crop_size or 224)
+
+
+def load_hf_model(model_id: str):
+    try:
+        from transformers import AutoImageProcessor, AutoModel
+    except ImportError as exc:
+        raise RuntimeError("transformers is required for --source hf") from exc
+
+    processor = AutoImageProcessor.from_pretrained(model_id)
+    model = AutoModel.from_pretrained(model_id)
+    return model, processor
 
 
 def discover_class_names(data_dir: Path) -> list[str]:
@@ -150,24 +210,45 @@ def discover_class_names(data_dir: Path) -> list[str]:
     return sorted(classes)
 
 
-def extract_cls(model: torch.nn.Module, img_tensor: torch.Tensor, device: torch.device) -> torch.Tensor:
+def extract_cls(
+    model: torch.nn.Module,
+    img_tensor: torch.Tensor,
+    device: torch.device,
+    source: str,
+) -> torch.Tensor:
     with torch.no_grad(), torch.amp.autocast(
         device_type="cuda", dtype=torch.float16, enabled=device.type == "cuda"
     ):
         img_tensor = img_tensor.to(device, non_blocking=True)
-        out = model.forward_features(img_tensor)
 
-        if isinstance(out, list):
-            out = out[0]
+        if source == "hf":
+            outputs = model(pixel_values=img_tensor)
+            if isinstance(outputs, (tuple, list)):
+                last_hidden = outputs[0] if outputs else None
+                pooler = None
+            else:
+                last_hidden = getattr(outputs, "last_hidden_state", None)
+                pooler = getattr(outputs, "pooler_output", None)
 
-        if "x_norm_clstoken" in out:
-            cls = out["x_norm_clstoken"]
-        elif "x_cls" in out:
-            cls = out["x_cls"]
-        elif "x_prenorm" in out:
-            cls = out["x_prenorm"][:, 0]
+            if pooler is not None:
+                cls = pooler
+            elif last_hidden is not None:
+                cls = last_hidden[:, 0]
+            else:
+                raise KeyError("HF model outputs missing last_hidden_state")
         else:
-            raise KeyError(f"No CLS token in forward_features output: {out.keys()}")
+            out = model.forward_features(img_tensor)
+            if isinstance(out, list):
+                out = out[0]
+
+            if "x_norm_clstoken" in out:
+                cls = out["x_norm_clstoken"]
+            elif "x_cls" in out:
+                cls = out["x_cls"]
+            elif "x_prenorm" in out:
+                cls = out["x_prenorm"][:, 0]
+            else:
+                raise KeyError(f"No CLS token in forward_features output: {out.keys()}")
 
         # L2 normalize like upstream k-NN eval
         cls = torch.nn.functional.normalize(cls, dim=-1)
@@ -182,6 +263,7 @@ def build_embeddings(
     class_to_idx: dict[str, int],
     log_interval: int,
     embed_batch_size: int,
+    source: str,
 ) -> tuple[np.ndarray, np.ndarray]:
     files: list[tuple[Path, int]] = []
     for class_name, label_int in class_to_idx.items():
@@ -214,7 +296,7 @@ def build_embeddings(
         flush = (len(batch_imgs) == embed_batch_size) or (idx == total - 1)
         if flush:
             batch_tensor = torch.stack(batch_imgs, dim=0)
-            feats = extract_cls(model, batch_tensor, device)
+            feats = extract_cls(model, batch_tensor, device, source)
             # feats shape: (B, dim)
             if feats.ndim == 1:
                 feats = feats[None, :]
@@ -251,22 +333,31 @@ def build_embeddings(
 
 def run_single(args: argparse.Namespace) -> None:
     device = torch.device("cuda:0")
-    weights_type = resolve_weights_type(args.weights, args.weights_type)
-    transform = make_transform(weights_type)
+    if args.source != "hf":
+        raise RuntimeError("local source not supported: dinov3 repo removed")
 
-    mean, std = STATS[weights_type]
-    log_msg(f"Loading model {args.model_name}", rank=0)
-    log_msg(f"Using weights: {args.weights}", rank=0)
-    log_msg(f"Normalization ({weights_type}): mean={mean}, std={std}", rank=0)
-
-    model = torch.hub.load(
-        REPO_DIR,
-        args.model_name,
-        source="local",
-        trust_repo=True,
-        weights=str(args.weights),
+    model, processor = load_hf_model(args.weights)
+    resize_size, crop_size = resolve_hf_sizes(processor)
+    if args.weights_type != "auto":
+        mean, std = STATS[args.weights_type]
+    else:
+        mean = tuple(getattr(processor, "image_mean", STATS["lvd"][0]))
+        std = tuple(getattr(processor, "image_std", STATS["lvd"][1]))
+    transform = make_transform(
+        weights_type="auto",
+        resize_size=resize_size,
+        crop_size=crop_size,
+        mean=mean,
+        std=std,
     )
-    model = model.to(device).eval().half()
+    log_msg(f"Loading HF model {args.weights}", rank=0)
+    log_msg(
+        f"Normalization (hf): mean={mean}, std={std}, resize={resize_size}, crop={crop_size}",
+        rank=0,
+    )
+    model = model.to(device).eval()
+    if device.type == "cuda":
+        model = model.half()
 
     splits = ["train", "val", "test"]
     Xs: dict[str, np.ndarray] = {}
@@ -308,6 +399,7 @@ def run_single(args: argparse.Namespace) -> None:
             class_to_idx=class_to_idx,
             log_interval=args.log_interval,
             embed_batch_size=args.embed_batch_size,
+            source=args.source,
         )
 
         Xs[split] = X_local
@@ -389,16 +481,18 @@ def main() -> None:
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required for k-NN evaluation.")
 
-    device = torch.device("cuda:0")
-
     args.data_dir = args.data_dir.resolve()
-    args.weights = args.weights.resolve()
     dataset_name = args.data_dir.name
-    weight_id = args.weights.stem
-    default_ckpt = RUNS_ROOT / "dinov3-knn-cache" / dataset_name / f"{args.model_name}-{weight_id}"
+
+    if args.source != "hf":
+        raise RuntimeError("local source not supported: dinov3 repo removed")
+
+    model_tag = args.model_name or "hf"
+    weight_id = args.weights.replace("/", "_")
+
+    default_ckpt = RUNS_ROOT / "dinov3-knn-cache" / dataset_name / f"{model_tag}-{weight_id}"
     args.ckpt_dir = (args.ckpt_dir or default_ckpt).resolve()
     args.class_names = discover_class_names(args.data_dir)
-    args.weights_type = resolve_weights_type(args.weights, args.weights_type)
 
     os.environ.setdefault("MASTER_ADDR", DEFAULT_MASTER_ADDR)
     os.environ.setdefault("MASTER_PORT", DEFAULT_MASTER_PORT)
