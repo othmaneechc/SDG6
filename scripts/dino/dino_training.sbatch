@@ -8,12 +8,12 @@
 
 set -euo pipefail
 
-mkdir -p logs
+# mkdir -p logs 
 
 # Optional: pin threads to avoid oversubscription
-export OMP_NUM_THREADS=8
-export MKL_NUM_THREADS=8
-export NUMEXPR_NUM_THREADS=8
+export OMP_NUM_THREADS=16
+export MKL_NUM_THREADS=16
+export NUMEXPR_NUM_THREADS=16
 
 # NCCL settings for multi-GPU stability
 export TORCH_NCCL_BLOCKING_WAIT=1
@@ -50,13 +50,13 @@ DATA_NAME=$(basename "$DATA_PATH")
 OUTPUT_DIR="${OUTPUT_ROOT}/${MODEL_NAME}_${DATA_NAME}_${RUN_TS}"
 mkdir -p "$OUTPUT_DIR"
 
-# Main training (2x A100)
-torchrun --nproc_per_node=2 /home/mila/e/echchabo/projects/SDG6-Tracker/src/dino/main_dino.py \
+# Main training (use the 8 GPUs requested above)
+torchrun --standalone --nproc_per_node=4 /dkucc/home/oe23/SDG6-Tracker/src/dino/main_dino.py \
 	--arch vit_base \
 	--data_path "$DATA_PATH" \
 	--output_dir "$OUTPUT_DIR" \
 	--epochs 50 \
-	--batch_size_per_gpu 32 \
+	--batch_size_per_gpu 16 \
 	--patch_size 8 \
 	--lr 0.001 \
 	--use_fp16 True
