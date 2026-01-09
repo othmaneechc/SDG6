@@ -64,6 +64,14 @@ for DATASET in "${DATASETS[@]}"; do
           for PCA_DIM in "${PCA_DIMS[@]}"; do
             RUN_TAG="metric-${METRIC}_w-${WEIGHTS_SCHEME}_temp-${TEMP}_pca-${PCA_DIM}"
             CKPT_DIR="${CACHE_ROOT}/${DATASET}/${MODEL_NAME}/${RUN_TAG}"
+              
+              # Skip if results already exist (use highest k marker)
+              LAST_K="$(echo "${K_VALUES}" | awk -F',' '{print $NF}')"
+              TEST_CM="${CKPT_DIR}/confusion/confusion_test_k${LAST_K}.txt"
+              if [[ -f "${TEST_CM}" ]]; then
+                echo "[SKIP] ${DATASET} / ${MODEL_NAME} / ${RUN_TAG} already has ${TEST_CM}"
+                continue
+              fi
 
             echo "============================================================"
             echo "Dataset : ${DATASET}"

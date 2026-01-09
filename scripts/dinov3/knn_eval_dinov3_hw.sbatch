@@ -9,6 +9,7 @@
 #SBATCH --error=/dkucc/home/oe23/SDG6-Tracker/runs/dinov3-knn-hw-%j.err
 
 set -euo pipefail
+export CUDA_VISIBLE_DEVICES=1,2,4,5,6,7
 
 REPO="/dkucc/home/oe23/SDG6-Tracker"
 
@@ -30,7 +31,7 @@ TEMPERATURE="${TEMPERATURE:-0.07}"
 SIM_BATCH="${SIM_BATCH:-2048}"
 EMBED_BATCH_SIZE=256
 CACHE_ROOT="${REPO}/runs/dinov3-knn-hw"
-GPUS_PER_NODE=4
+GPUS_PER_NODE=6
 MASTER_PORT="${MASTER_PORT:-29500}"
 export MASTER_ADDR="${MASTER_ADDR:-127.0.0.1}"
 
@@ -56,6 +57,14 @@ for DATASET in "${DATASETS[@]}"; do
   for WEIGHTS in "${MODELS[@]}"; do
     MODEL_NAME="$(basename "${WEIGHTS}")"
     CKPT_DIR="${CACHE_ROOT}/${DATASET}/${MODEL_NAME}"
+
+    # Skip if results already exist (use highest k marker)
+    LAST_K="$(echo "${K_VALUES}" | awk -F',' '{print $NF}')"
+    TEST_CM="${CKPT_DIR}/confusion/confusion_test_k${LAST_K}.txt"
+    if [[ -f "${TEST_CM}" ]]; then
+      echo "[SKIP] ${DATASET} / ${MODEL_NAME} already has ${TEST_CM}"
+      continue
+    fi
 
     echo "============================================================"
     echo "Dataset : ${DATASET}"
