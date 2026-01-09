@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=sdg6-dinov3-knn
+#SBATCH --job-name=sdg6-dinov3-knn-hw
 #SBATCH --partition=main
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:7
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=96G
 #SBATCH --time=12:00:00
-#SBATCH --output=/dkucc/home/oe23/SDG6-Tracker/runs/dinov3-knn-%j.out
-#SBATCH --error=/dkucc/home/oe23/SDG6-Tracker/runs/dinov3-knn-%j.err
+#SBATCH --output=/dkucc/home/oe23/SDG6-Tracker/runs/dinov3-knn-hw-%j.out
+#SBATCH --error=/dkucc/home/oe23/SDG6-Tracker/runs/dinov3-knn-hw-%j.err
 
 set -euo pipefail
 
@@ -25,21 +25,22 @@ export PYTHONPATH="${REPO}/src:${PYTHONPATH:-}"
 DATA_ROOT="/work/lamlab/data"
 WEIGHTS_SOURCE="hf"
 WEIGHTS_TYPE="auto"
-K_VALUES="5,10,20,50,100"
+K_VALUES="1,5,10,20,50,100"
+TEMPERATURE="${TEMPERATURE:-0.07}"
+SIM_BATCH="${SIM_BATCH:-2048}"
 EMBED_BATCH_SIZE=256
-CACHE_ROOT="${REPO}/runs/dinov3-knn-cache"
+CACHE_ROOT="${REPO}/runs/dinov3-knn-hw"
 GPUS_PER_NODE=4
 MASTER_PORT="${MASTER_PORT:-29500}"
 export MASTER_ADDR="${MASTER_ADDR:-127.0.0.1}"
 
-# ---- Experiments -------------------------------------------------------------
 DATASETS=(
   "PW-s"
-  "PW-m"
-  "PW-l"
+  # "PW-m"
+  # "PW-l"
   "SW-s"
-  "SW-m"
-  "SW-l"
+  # "SW-m"
+  # "SW-l"
 )
 
 MODELS=(
@@ -60,15 +61,20 @@ for DATASET in "${DATASETS[@]}"; do
     echo "Dataset : ${DATASET}"
     echo "Model   : ${WEIGHTS}"
     echo "Cache   : ${CKPT_DIR}"
+    echo "k list  : ${K_VALUES}"
+    echo "Temp    : ${TEMPERATURE}"
+    echo "Sim bs  : ${SIM_BATCH}"
     echo "============================================================"
 
-    torchrun --nproc_per_node="${GPUS_PER_NODE}" --master_port="${MASTER_PORT}" "${REPO}/scripts/run_dinov3_knn.py" \
+    torchrun --nproc_per_node="${GPUS_PER_NODE}" --master_port="${MASTER_PORT}" "${REPO}/scripts/run_dinov3_knn_hw.py" \
       --data-dir "${DATA_DIR}" \
       --source "${WEIGHTS_SOURCE}" \
       --weights "${WEIGHTS}" \
       --weights-type "${WEIGHTS_TYPE}" \
       --dtype "bf16" \
       --k-values "${K_VALUES}" \
+      --temperature "${TEMPERATURE}" \
+      --similarity-batch "${SIM_BATCH}" \
       --ckpt-dir "${CKPT_DIR}" \
       --embed-batch-size "${EMBED_BATCH_SIZE}"
   done
