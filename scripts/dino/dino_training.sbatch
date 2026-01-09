@@ -32,7 +32,7 @@ DATA_PATH=${DATA_PATH:-/network/scratch/e/echchabo/SDG6-Tracker/PW-s}
 DATA_NAME=$(basename "$DATA_PATH")
 RUN_TS=$(date +"%Y%m%d_%H%M%S")
 OUTPUT_ROOT=/network/scratch/e/echchabo/SDG6-Tracker/runs
-OUTPUT_DIR="${OUTPUT_ROOT}/${MODEL_NAME}_${DATA_NAME}_${RUN_TS}"
+OUTPUT_DIR="${OUTPUT_ROOT}/${MODEL_NAME}_${DATA_NAME}"
 mkdir -p "$OUTPUT_DIR"
 
 torchrun --nproc_per_node=2 /home/mila/e/echchabo/projects/SDG6-Tracker/src/dino/main_dino.py \
