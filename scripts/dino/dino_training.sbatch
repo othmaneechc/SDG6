@@ -4,7 +4,7 @@
 #SBATCH --gres=gpu:a100l:2
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=24G
-#SBATCH --time=110:00:00
+#SBATCH --time=120:00:00
 
 set -euo pipefail
 
@@ -45,21 +45,21 @@ torchrun --nproc_per_node=2 /home/mila/e/echchabo/projects/SDG6-Tracker/src/dino
 	--lr 0.001 \
 	--use_fp16 True
 
-DATA_PATH=${DATA_PATH:-/network/scratch/e/echchabo/SDG6-Tracker/PW-m}
-DATA_NAME=$(basename "$DATA_PATH")
-OUTPUT_DIR="${OUTPUT_ROOT}/${MODEL_NAME}_${DATA_NAME}_${RUN_TS}"
-mkdir -p "$OUTPUT_DIR"
+# DATA_PATH=${DATA_PATH:-/network/scratch/e/echchabo/SDG6-Tracker/PW-m}
+# DATA_NAME=$(basename "$DATA_PATH")
+# OUTPUT_DIR="${OUTPUT_ROOT}/${MODEL_NAME}_${DATA_NAME}_${RUN_TS}"
+# mkdir -p "$OUTPUT_DIR"
 
-# Main training (use the 8 GPUs requested above)
-torchrun --standalone --nproc_per_node=4 /dkucc/home/oe23/SDG6-Tracker/src/dino/main_dino.py \
-	--arch vit_base \
-	--data_path "$DATA_PATH" \
-	--output_dir "$OUTPUT_DIR" \
-	--epochs 50 \
-	--batch_size_per_gpu 16 \
-	--patch_size 8 \
-	--lr 0.001 \
-	--use_fp16 True
+# # Main training (use the 8 GPUs requested above)
+# torchrun --standalone --nproc_per_node=4 /dkucc/home/oe23/SDG6-Tracker/src/dino/main_dino.py \
+# 	--arch vit_base \
+# 	--data_path "$DATA_PATH" \
+# 	--output_dir "$OUTPUT_DIR" \
+# 	--epochs 50 \
+# 	--batch_size_per_gpu 16 \
+# 	--patch_size 8 \
+# 	--lr 0.001 \
+# 	--use_fp16 True
 
 
 # ---------------------------------------------------------------------------

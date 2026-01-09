@@ -1,62 +1,39 @@
 #!/bin/bash
-#SBATCH --job-name=dino-predict
-#SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=32G
-#SBATCH --time=24:00:00
-#SBATCH --output=/home/mila/e/echchabo/projects/SDG6-Tracker/runs/dino-predict-%j.out
-#SBATCH --error=/home/mila/e/echchabo/projects/SDG6-Tracker/runs/dino-predict-%j.err
+#SBATCH --job-name=sdg6-dino-train
+#SBATCH --partition=main
+#SBATCH --gres=gpu:a100l:2
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=24G
+#SBATCH --time=120:00:00
 
 set -euo pipefail
 
-module load cuda/12.1.1
+# mkdir -p logs 
 
-REPO="/home/mila/e/echchabo/projects/SDG6-Tracker"
-PREDICT_PY="${REPO}/src/dino/predict.py"
+# Timestamped output directory grouped by model (override MODEL_NAME to change)
+MODEL_NAME=${MODEL_NAME:-dino}
+DATA_PATH=${DATA_PATH:-/network/scratch/e/echchabo/SDG6-Tracker/PW-s}
+DATA_NAME=$(basename "$DATA_PATH")
+RUN_TS=$(date +"%Y%m%d_%H%M%S")
+OUTPUT_ROOT=/network/scratch/e/echchabo/SDG6-Tracker/val_pws
+OUTPUT_DIR="${OUTPUT_ROOT}/${MODEL_NAME}_${DATA_NAME}"
+mkdir -p "$OUTPUT_DIR"
 
-# Ensure imports resolve
-export PYTHONPATH="${REPO}/src/dino:${PYTHONPATH:-}"
+# k-NN eval example (2x GPUs, cosine metric)
+torchrun --nproc_per_node=2 --master_port=29501 /home/mila/e/echchabo/projects/SDG6-Tracker/src/dino/eval_knn.py \
+  --pretrained_weights /home/mila/e/echchabo/scratch/SDG6-Tracker/runs/dino_PW-s/checkpoint.pth \
+  --checkpoint_key teacher \
+  --data_path "$DATA_PATH" \
+  --patch_size 8 \
+  --arch vit_base \
+  --output_dir "$OUTPUT_DIR" \
 
-# Optional: activate a venv if present
-VENV_ACTIVATE="${VENV_ACTIVATE:-${REPO}/.venv/bin/activate}"
-if [[ -f "${VENV_ACTIVATE}" ]]; then
-  # shellcheck disable=SC1090
-  source "${VENV_ACTIVATE}"
-fi
 
-RUN_DATETIME="${RUN_DATETIME:-$(date +%Y%m%dT%H%M%S)}"
-OUTPUT_ROOT="${OUTPUT_ROOT:-${REPO}/runs/dino-predict-${RUN_DATETIME}}"
-DATA_DIR="${DATA_DIR:-/home/mila/e/echchabo/scratch/PW-s/test}"
-CHECKPOINT_PATH="${CHECKPOINT_PATH:-${REPO}/src/dino/checkpoint.pth}"
-KNN_CLASSIFIER_PATH="${KNN_CLASSIFIER_PATH:-${REPO}/src/dino/knn_classifier.pth}"
-OUTPUT_DIR="${OUTPUT_ROOT}"
-
-mkdir -p "${OUTPUT_ROOT}"
-
-if [[ ! -d "${DATA_DIR}" ]]; then
-  echo "DATA_DIR does not exist: ${DATA_DIR}"
-  exit 1
-fi
-
-if [[ ! -f "${CHECKPOINT_PATH}" ]]; then
-  echo "Checkpoint not found: ${CHECKPOINT_PATH}"
-  exit 1
-fi
-
-if [[ ! -f "${KNN_CLASSIFIER_PATH}" ]]; then
-  echo "k-NN classifier not found: ${KNN_CLASSIFIER_PATH}"
-  exit 1
-fi
-
-CMD=(
-  python "${PREDICT_PY}"
-  --checkpoint_path "${CHECKPOINT_PATH}"
-  --knn_classifier_path "${KNN_CLASSIFIER_PATH}"
-  --output_dir "${OUTPUT_DIR}"
-  --directory "${DATA_DIR}"
-)
-
-echo "Running: ${CMD[*]}"
-SRUN_CPUS="${SLURM_CPUS_PER_TASK:-8}"
-SRUN_CMD=(srun --ntasks=1 --cpus-per-task="${SRUN_CPUS}" --cpu-bind=none)
-"${SRUN_CMD[@]}" "${CMD[@]}"
+# Attention viz example
+# python /home/mila/e/echchabo/projects/SDG6-Tracker/scripts/visualize_attention.py \
+#   --pretrained_weights /home/mila/e/echchabo/projects/SDG6-Tracker/runs/checkpoint.pth \
+#   --image_path /network/scratch/e/echchabo/PW-s/train/sample.tif \
+#   --output_dir /home/mila/e/echchabo/projects/SDG6-Tracker/runs/viz \
+#   --patch_size 8 \
+#   --image_size 256 256 \
+#   --arch vit_base
