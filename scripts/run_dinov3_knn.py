@@ -665,7 +665,7 @@ def main() -> None:
     run_single(args, rank=rank, world_size=world_size, device=device)
 
     if world_size > 1 and dist.is_initialized():
-        dist.barrier()
+        # Do not barrier here: rank 0 may still be running k-NN while others have exited.
         dist.destroy_process_group()
 
 
