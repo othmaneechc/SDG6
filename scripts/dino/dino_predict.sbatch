@@ -26,7 +26,7 @@ torchrun --nproc_per_node=2 --master_port=29501 /home/mila/e/echchabo/projects/S
   --data_path "$DATA_PATH" \
   --patch_size 8 \
   --arch vit_base \
-  --output_dir "$OUTPUT_DIR" \
+  --dump_features "$OUTPUT_DIR" \
 
 
 # Attention viz example
