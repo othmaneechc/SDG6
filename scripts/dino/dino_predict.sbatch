@@ -15,19 +15,18 @@ MODEL_NAME=${MODEL_NAME:-dino}
 DATA_PATH=${DATA_PATH:-/network/scratch/e/echchabo/SDG6-Tracker/PW-s}
 DATA_NAME=$(basename "$DATA_PATH")
 RUN_TS=$(date +"%Y%m%d_%H%M%S")
-OUTPUT_ROOT=/network/scratch/e/echchabo/SDG6-Tracker/val_pws
+OUTPUT_ROOT=/network/scratch/e/echchabo/SDG6-Tracker/val_pws_old
 OUTPUT_DIR="${OUTPUT_ROOT}/${MODEL_NAME}_${DATA_NAME}"
 mkdir -p "$OUTPUT_DIR"
 
 # k-NN eval example (2x GPUs, cosine metric)
 torchrun --nproc_per_node=2 --master_port=29501 /home/mila/e/echchabo/projects/SDG6-Tracker/src/dino/eval_knn.py \
-  --pretrained_weights /home/mila/e/echchabo/scratch/SDG6-Tracker/runs/dino_PW-s/checkpoint.pth \
+  --pretrained_weights /home/mila/e/echchabo/scratch/checkpoint.pth \
   --checkpoint_key teacher \
   --data_path "$DATA_PATH" \
   --patch_size 8 \
   --arch vit_base \
   --dump_features "$OUTPUT_DIR" \
-
 
 # Attention viz example
 # python /home/mila/e/echchabo/projects/SDG6-Tracker/scripts/visualize_attention.py \
