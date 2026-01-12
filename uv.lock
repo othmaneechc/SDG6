@@ -66,6 +66,11 @@ wheels = [
 ]
 
 [[package]]
+name = "dino"
+version = "0.0.0"
+source = { editable = "src/dino" }
+
+[[package]]
 name = "filelock"
 version = "3.20.1"
 source = { registry = "https://pypi.org/simple" }
@@ -709,6 +714,7 @@ name = "sdg6-tracker"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "dino" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas" },
@@ -726,6 +732,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "dino", editable = "src/dino" },
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pillow", specifier = ">=10.0.0" },
