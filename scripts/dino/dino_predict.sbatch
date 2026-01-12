@@ -20,7 +20,7 @@ OUTPUT_DIR="${OUTPUT_ROOT}/${MODEL_NAME}_${DATA_NAME}"
 mkdir -p "$OUTPUT_DIR"
 
 # k-NN eval example (2x GPUs, cosine metric)
-torchrun --nproc_per_node=2 --master_port=29501 /home/mila/e/echchabo/projects/SDG6-Tracker/src/dino/eval_knn.py \
+torchrun --nproc_per_node=2 --master_port=29501 --module dino.eval_knn \
   --pretrained_weights /home/mila/e/echchabo/scratch/checkpoint.pth \
   --checkpoint_key teacher \
   --data_path "$DATA_PATH" \

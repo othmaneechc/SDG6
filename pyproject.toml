@@ -24,4 +24,4 @@ package = false
 dev-dependencies = []
 
 [tool.uv.sources]
-dino = { path = "src/dino", editable = true }
+dino = { git = "https://github.com/othmaneechc/dino", branch = "main" }

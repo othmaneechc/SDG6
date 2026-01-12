@@ -68,7 +68,7 @@ wheels = [
 [[package]]
 name = "dino"
 version = "0.0.0"
-source = { editable = "src/dino" }
+source = { git = "https://github.com/othmaneechc/dino?branch=main#c2ffcbbb142f0de0ef3a93a216b403ea23ca67e4" }
 
 [[package]]
 name = "filelock"
@@ -732,7 +732,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dino", editable = "src/dino" },
+    { name = "dino", git = "https://github.com/othmaneechc/dino?branch=main" },
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pillow", specifier = ">=10.0.0" },
