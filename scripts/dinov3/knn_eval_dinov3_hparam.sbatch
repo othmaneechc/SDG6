@@ -84,7 +84,7 @@ for DATASET in "${DATASETS[@]}"; do
 
             TEMP_ARG="${TEMP}"; [[ "${TEMP}" == "n/a" ]] && TEMP_ARG="0.07"
 
-            torchrun --nproc_per_node="${GPUS_PER_NODE}" --master_port="${MASTER_PORT}" "${REPO}/scripts/run_dinov3_knn.py" \
+            torchrun --nproc_per_node="${GPUS_PER_NODE}" --master_port="${MASTER_PORT}" "${REPO}/src/models/dinov3/knn_eval.py" \
               --data-dir "${DATA_DIR}" \
               --source "${WEIGHTS_SOURCE}" \
               --weights "${WEIGHTS}" \

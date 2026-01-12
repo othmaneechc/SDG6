@@ -75,7 +75,7 @@ for DATASET in "${DATASETS[@]}"; do
     echo "Sim bs  : ${SIM_BATCH}"
     echo "============================================================"
 
-    torchrun --nproc_per_node="${GPUS_PER_NODE}" --master_port="${MASTER_PORT}" "${REPO}/scripts/run_dinov3_knn_hw.py" \
+    torchrun --nproc_per_node="${GPUS_PER_NODE}" --master_port="${MASTER_PORT}" "${REPO}/src/models/dinov3/knn_eval_hw.py" \
       --data-dir "${DATA_DIR}" \
       --source "${WEIGHTS_SOURCE}" \
       --weights "${WEIGHTS}" \
