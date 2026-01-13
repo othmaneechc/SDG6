@@ -68,7 +68,7 @@ wheels = [
 [[package]]
 name = "dino"
 version = "0.0.0"
-source = { git = "https://github.com/othmaneechc/dino?branch=main#c2ffcbbb142f0de0ef3a93a216b403ea23ca67e4" }
+source = { git = "https://github.com/othmaneechc/dino?branch=main#559c4b77b22c0660a253edd239ef500a6d45f758" }
 
 [[package]]
 name = "einops"
