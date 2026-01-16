@@ -1,10 +1,10 @@
-# Copied from nasaharvest/galileo (MIT License) for local embedding use.
-# Source: /home/mila/e/echchabo/projects/galileo/single_file_galileo.py
 import collections.abc
 import itertools
 import json
 import math
+import re
 from collections import OrderedDict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 from typing import OrderedDict as OrderedDictType
@@ -16,6 +16,11 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import Tensor, vmap
 from torch.jit import Final
+
+# Adapter imports
+from models.base import ModelAdapter, resolve_device, resolve_dtype
+from sdg6.data import collate_samples
+from PIL import Image
 
 # constants
 CONFIG_FILENAME = "config.json"
@@ -68,6 +73,40 @@ SPACE_TIME_BANDS = S1_BANDS + S2_BANDS + ["NDVI"]
 TIME_BANDS = ERA5_BANDS + TC_BANDS + VIIRS_BANDS
 SPACE_BANDS = SRTM_BANDS + DW_BANDS + WC_BANDS
 STATIC_BANDS = LANDSCAN_BANDS + LOCATION_BANDS + STATIC_DW_BANDS + STATIC_WC_BANDS
+DEFAULT_MONTH = 5
+
+SPACE_TIME_STATS = {
+    "mean": [
+        -11.728724389184965,
+        -18.85558188024017,
+        1395.3408730676722,
+        1338.4026921784578,
+        1343.09883810357,
+        1543.8607982512297,
+        2186.2022069512263,
+        2525.0932853316694,
+        2410.3377187373408,
+        2750.2854646886753,
+        2234.911100061487,
+        1474.5311266077113,
+        0.2892116502999044,
+    ],
+    "std": [
+        4.887145774840316,
+        5.730270320384293,
+        917.7041440370853,
+        913.2988423581528,
+        1092.678723527555,
+        1047.2206083460424,
+        1048.0101611156767,
+        1143.6903026819996,
+        1098.979177731649,
+        1204.472755085893,
+        1145.9774063078878,
+        980.2429840007796,
+        0.2720939024500081,
+    ],
+}
 
 
 SPACE_TIME_BANDS_GROUPS_IDX: OrderedDictType[str, List[int]] = OrderedDict(
@@ -1170,7 +1209,10 @@ class Encoder(GalileoBase):
             encoder_config = model_config["encoder"]
         encoder = cls(**encoder_config)
 
-        state_dict = torch.load(folder / ENCODER_FILENAME, map_location=device)
+        try:
+            state_dict = torch.load(folder / ENCODER_FILENAME, map_location=device, weights_only=True)
+        except TypeError:
+            state_dict = torch.load(folder / ENCODER_FILENAME, map_location=device)
         for key in list(state_dict.keys()):
             # this cleans the state dict, which occasionally had an extra
             # ".backbone" included in the key names
@@ -1392,3 +1434,358 @@ class Decoder(GalileoBase):
             torch.stack(output_t, dim=-2),
             torch.stack(output_st, dim=-2),
         )
+
+
+# ======================================================================
+# Adapter utilities appended for SDG6 framework (embedding + k-NN)
+# ======================================================================
+
+DATE_PATTERNS = [
+    re.compile(r"(\d{4})-(\d{2})-(\d{2})"),
+    re.compile(r"(\d{4})_(\d{2})_(\d{2})"),
+    re.compile(r"(\d{8})"),
+]
+
+
+@dataclass(frozen=True)
+class GalileoInput:
+    s_t_x: torch.Tensor
+    sp_x: torch.Tensor
+    t_x: torch.Tensor
+    st_x: torch.Tensor
+    s_t_m: torch.Tensor
+    sp_m: torch.Tensor
+    t_m: torch.Tensor
+    st_m: torch.Tensor
+    months: torch.Tensor
+
+    def to(self, device: torch.device, non_blocking: bool = False) -> "GalileoInput":
+        return GalileoInput(
+            s_t_x=self.s_t_x.to(device, non_blocking=non_blocking),
+            sp_x=self.sp_x.to(device, non_blocking=non_blocking),
+            t_x=self.t_x.to(device, non_blocking=non_blocking),
+            st_x=self.st_x.to(device, non_blocking=non_blocking),
+            s_t_m=self.s_t_m.to(device, non_blocking=non_blocking),
+            sp_m=self.sp_m.to(device, non_blocking=non_blocking),
+            t_m=self.t_m.to(device, non_blocking=non_blocking),
+            st_m=self.st_m.to(device, non_blocking=non_blocking),
+            months=self.months.to(device, non_blocking=non_blocking),
+        )
+
+    @classmethod
+    def stack(cls, items: Sequence["GalileoInput"]) -> "GalileoInput":
+        return GalileoInput(
+            s_t_x=torch.stack([i.s_t_x for i in items], dim=0),
+            sp_x=torch.stack([i.sp_x for i in items], dim=0),
+            t_x=torch.stack([i.t_x for i in items], dim=0),
+            st_x=torch.stack([i.st_x for i in items], dim=0),
+            s_t_m=torch.stack([i.s_t_m for i in items], dim=0),
+            sp_m=torch.stack([i.sp_m for i in items], dim=0),
+            t_m=torch.stack([i.t_m for i in items], dim=0),
+            st_m=torch.stack([i.st_m for i in items], dim=0),
+            months=torch.stack([i.months for i in items], dim=0),
+        )
+
+
+def parse_month_from_path(path: Path) -> int | None:
+    stem = path.stem
+    for pattern in DATE_PATTERNS:
+        match = pattern.search(stem)
+        if not match:
+            continue
+        if len(match.groups()) == 3:
+            return int(match.group(2))
+        if len(match.groups()) == 1:
+            date_str = match.group(1)
+            if len(date_str) == 8:
+                return int(date_str[4:6])
+    return None
+
+
+def infer_band_names(num_bands: int) -> list[str]:
+    if num_bands >= len(S2_BANDS):
+        return list(S2_BANDS)
+    if num_bands == 3:
+        return ["B2", "B3", "B4"]
+    if num_bands == 4:
+        return ["B2", "B3", "B4", "B8"]
+    raise ValueError(f"Cannot infer band names for {num_bands} bands")
+
+
+def to_month_index(month: int) -> int:
+    if month < 1 or month > 12:
+        return DEFAULT_MONTH
+    return month - 1
+
+
+def read_multiband(path: Path) -> np.ndarray:
+    try:
+        import rasterio
+    except Exception:
+        rasterio = None
+
+    if rasterio is not None:
+        with rasterio.open(path) as src:
+            arr = src.read()
+        if arr.ndim == 3:
+            arr = np.moveaxis(arr, 0, -1)
+        return arr
+
+    from PIL import Image
+
+    with Image.open(path) as img:
+        arr = np.array(img)
+    if arr.ndim == 2:
+        arr = arr[:, :, None]
+    return arr
+
+
+def pad_to_square(arr: np.ndarray) -> np.ndarray:
+    h, w, c = arr.shape
+    if h == w:
+        return arr
+    size = max(h, w)
+    pad_h = size - h
+    pad_w = size - w
+    pad_top = pad_h // 2
+    pad_bottom = pad_h - pad_top
+    pad_left = pad_w // 2
+    pad_right = pad_w - pad_left
+    return np.pad(arr, ((pad_top, pad_bottom), (pad_left, pad_right), (0, 0)), mode="constant")
+
+
+def pad_to_patch(arr: np.ndarray, patch_size: int) -> np.ndarray:
+    if patch_size <= 0:
+        return arr
+    h, w, c = arr.shape
+    pad_h = (patch_size - h % patch_size) % patch_size
+    pad_w = (patch_size - w % patch_size) % patch_size
+    if pad_h == 0 and pad_w == 0:
+        return arr
+    return np.pad(arr, ((0, pad_h), (0, pad_w), (0, 0)), mode="constant")
+
+
+def _ensure_tdim(s2: torch.Tensor) -> torch.Tensor:
+    if s2.ndim == 3:
+        return s2.unsqueeze(2)
+    if s2.ndim == 4:
+        return s2
+    raise ValueError(f"Expected s2 shape [H,W,C] or [H,W,T,C], got {s2.shape}")
+
+
+def build_s2_input(
+    s2: torch.Tensor,
+    *,
+    band_names: Sequence[str],
+    months: torch.Tensor | None = None,
+    normalize: bool = False,
+    compute_ndvi: bool = False,
+) -> GalileoInput:
+    s2 = _ensure_tdim(s2)
+    device = s2.device
+    h, w, t, c = s2.shape
+
+    if len(band_names) != c:
+        raise ValueError(f"band_names has length {len(band_names)} but input has {c} bands")
+
+    s2_full = torch.zeros(
+        (h, w, t, len(S2_BANDS)), dtype=s2.dtype, device=device
+    )
+    for idx, name in enumerate(band_names):
+        if name in S2_BANDS:
+            s2_full[..., S2_BANDS.index(name)] = s2[..., idx]
+
+    s_t_x = torch.zeros(
+        (h, w, t, len(SPACE_TIME_BANDS)), dtype=s2.dtype, device=device
+    )
+    offset = len(S1_BANDS)
+    s_t_x[..., offset : offset + len(S2_BANDS)] = s2_full
+
+    has_b4 = "B4" in band_names
+    has_b8 = "B8" in band_names
+    if compute_ndvi and has_b4 and has_b8:
+        red = s2_full[..., S2_BANDS.index("B4")]
+        nir = s2_full[..., S2_BANDS.index("B8")]
+        ndvi = (nir - red) / (nir + red + 1e-6)
+        s_t_x[..., SPACE_TIME_BANDS.index("NDVI")] = ndvi
+
+    s_t_m = torch.ones(
+        (h, w, t, len(SPACE_TIME_BANDS_GROUPS_IDX)), dtype=s2.dtype, device=device
+    )
+    for g_idx, (g_name, band_idxs) in enumerate(SPACE_TIME_BANDS_GROUPS_IDX.items()):
+        if g_name == "NDVI":
+            if compute_ndvi and has_b4 and has_b8:
+                s_t_m[..., g_idx] = 0
+            continue
+        if not g_name.startswith("S2"):
+            continue
+        group_band_names = [SPACE_TIME_BANDS[i] for i in band_idxs]
+        if any(name in band_names for name in group_band_names):
+            s_t_m[..., g_idx] = 0
+
+    sp_x = torch.zeros(
+        (h, w, len(SPACE_BANDS)), dtype=s2.dtype, device=device
+    )
+    sp_m = torch.ones(
+        (h, w, len(SPACE_BAND_GROUPS_IDX)), dtype=s2.dtype, device=device
+    )
+    t_x = torch.zeros((t, len(TIME_BANDS)), dtype=s2.dtype, device=device)
+    t_m = torch.ones((t, len(TIME_BAND_GROUPS_IDX)), dtype=s2.dtype, device=device)
+    st_x = torch.zeros((len(STATIC_BANDS)), dtype=s2.dtype, device=device)
+    st_m = torch.ones(
+        (len(STATIC_BAND_GROUPS_IDX)), dtype=s2.dtype, device=device
+    )
+
+    if months is None:
+        months = torch.ones((t,), dtype=torch.long, device=device) * DEFAULT_MONTH
+    else:
+        months = months.to(device)
+        if months.shape[0] != t:
+            raise ValueError("Incorrect number of input months")
+
+    if normalize:
+        mean = torch.tensor(SPACE_TIME_STATS["mean"], device=device, dtype=s_t_x.dtype)
+        std = torch.tensor(SPACE_TIME_STATS["std"], device=device, dtype=s_t_x.dtype)
+        shift = mean - 2 * std
+        div = 4 * std
+        s_t_x = (s_t_x - shift) / div
+
+    return GalileoInput(
+        s_t_x=s_t_x,
+        sp_x=sp_x,
+        t_x=t_x,
+        st_x=st_x,
+        s_t_m=s_t_m,
+        sp_m=sp_m,
+        t_m=t_m,
+        st_m=st_m,
+        months=months,
+    )
+
+
+def encode_batch(
+    encoder: Encoder,
+    batch: GalileoInput,
+    *,
+    patch_size: int,
+    input_resolution_m: int,
+    amp_dtype: torch.dtype,
+) -> torch.Tensor:
+    device = next(encoder.parameters()).device
+    with torch.no_grad(), torch.amp.autocast(
+        device_type="cuda", dtype=amp_dtype, enabled=device.type == "cuda"
+    ):
+        out = encoder(
+            batch.s_t_x,
+            batch.sp_x,
+            batch.t_x,
+            batch.st_x,
+            batch.s_t_m,
+            batch.sp_m,
+            batch.t_m,
+            batch.st_m,
+            batch.months,
+            patch_size=patch_size,
+            input_resolution_m=input_resolution_m,
+        )
+        s_t_x, sp_x, t_x, st_x, s_t_m, sp_m, t_m, st_m, _ = out
+        emb = Encoder.average_tokens(s_t_x, sp_x, t_x, st_x, s_t_m, sp_m, t_m, st_m)
+        emb = F.normalize(emb, dim=-1)
+        return emb
+
+
+class GalileoAdapter(ModelAdapter):
+    def __init__(self, *args, patch_size: int, input_resolution_m: int, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.patch_size = patch_size
+        self.input_resolution_m = input_resolution_m
+
+    def encode(self, batch: GalileoInput) -> torch.Tensor:
+        batch = batch.to(self.device)
+        return encode_batch(
+            self.encoder,
+            batch,
+            patch_size=self.patch_size,
+            input_resolution_m=self.input_resolution_m,
+            amp_dtype=self.dtype,
+        )
+
+
+def load_model(
+    *,
+    weights_dir: str | Path,
+    device: str | torch.device | None = None,
+    dtype: str | torch.dtype = "auto",
+    input_resolution_m: int = 10,
+    patch_size: int = 0,
+    band_indices: Sequence[int] | None = None,
+    band_names: Sequence[str] | None = None,
+    value_scale: float = 1.0,
+    normalize: bool = False,
+    compute_ndvi: bool = False,
+    default_month_index: int = DEFAULT_MONTH,
+    parse_month_from_name: bool = True,
+    pad_square: bool = True,
+    pad_to_patch_flag: bool = True,
+) -> ModelAdapter:
+    device = resolve_device(str(device)) if isinstance(device, str) or device is None else device
+    dtype = dtype if isinstance(dtype, torch.dtype) else resolve_dtype(str(dtype), device)
+
+    weights_path = Path(weights_dir)
+    config_path = weights_path / CONFIG_FILENAME
+    if not config_path.exists():
+        raise FileNotFoundError(f"Missing config: {config_path}")
+    with config_path.open("r") as f:
+        config = json.load(f)
+    encoder_cfg = config.get("model", {}).get("encoder", {})
+
+    encoder = Encoder.load_from_folder(weights_path, device)
+    encoder = encoder.to(device).eval()
+
+    patch_size = patch_size or int(encoder_cfg.get("patch_size", 0) or 0) or 16
+    output_dim = int(
+        getattr(encoder, "output_embedding_size", None)
+        or getattr(encoder, "embedding_size", None)
+        or encoder_cfg.get("encoder_embedding_size")
+        or encoder_cfg.get("decoder_embedding_size")
+        or 128
+    )
+
+    def _transform(arr: np.ndarray, path: Path | None = None) -> GalileoInput:
+        data = arr
+        if band_indices is not None:
+            data = data[:, :, band_indices]
+        if pad_square:
+            data = pad_to_square(data)
+        if pad_to_patch_flag and patch_size:
+            data = pad_to_patch(data, patch_size)
+
+        names = list(band_names) if band_names is not None else infer_band_names(data.shape[2])
+        month_val = default_month_index
+        if parse_month_from_name and path is not None:
+            parsed = parse_month_from_path(Path(path))
+            if parsed is not None:
+                month_val = to_month_index(parsed)
+        months = torch.tensor([month_val], dtype=torch.long)
+
+        tensor = torch.from_numpy(np.asarray(data)).float() * float(value_scale)
+        return build_s2_input(
+            tensor,
+            band_names=names,
+            months=months,
+            normalize=normalize,
+            compute_ndvi=compute_ndvi,
+        )
+
+    return GalileoAdapter(
+        name="galileo",
+        encoder=encoder,
+        device=device,
+        transform=_transform,
+        reader=read_multiband,
+        collate_fn=collate_samples,
+        output_dim=output_dim,
+        dtype=dtype,
+        patch_size=patch_size,
+        input_resolution_m=input_resolution_m,
+    )

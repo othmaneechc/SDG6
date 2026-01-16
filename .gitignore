@@ -4,6 +4,8 @@
 *.pt
 *.ckpt
 
+__pycache__/
+log/
 # dino artifacts
 src/dino_/
 

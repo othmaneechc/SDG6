@@ -1,32 +1,10 @@
-# DINOv3 k-NN batch job (HF weights)
+# Batch jobs (path agnostic)
 
-- Script: `scripts/dinov3/knn_eval_dinov3.sbatch` (or `scripts/dinov3_knn.sbatch`) runs a single k-NN eval job.
-- Driver: `src/models/dinov3/knn_eval.py` loads a DINOv3 backbone from Hugging Face and computes k-NN metrics on train/val/test splits.
+All jobs call the unified CLI (`python -m sdg6.cli`). `PYTHONPATH` is set relative to the script location; override `DATA_ROOT`, `WEIGHTS`, etc. via env vars before `sbatch`.
 
-## Required inputs
-- `DATA_DIR` (env var): folder with `train/val/test` ImageFolder splits (default `/home/mila/e/echchabo/scratch/PW-m`).
-- `WEIGHTS` (env var): Hugging Face model id (default `facebook/dinov3-vitb16-pretrain-lvd1689m`).
-- Optional env vars: `WEIGHTS_TYPE` (`auto|lvd|sat`), `K_VALUES`, `EMBED_BATCH_SIZE`, `CKPT_DIR`, `VENV_ACTIVATE`.
+- `scripts/dino_pt.sbatch` — DINO pretraining/fine-tuning via `dino.main_dino` (data + hyperparams configurable).
+- `scripts/dino.sbatch` — k-NN eval for DINO checkpoints.
+- `scripts/dinov3.sbatch` — k-NN eval for Hugging Face DINOv3 weights.
+- `scripts/galileo.sbatch` — k-NN eval for local Galileo encoder weights.
 
-## Submit
-```bash
-cd /home/mila/e/echchabo/projects/SDG6-Tracker
-sbatch scripts/dinov3/knn_eval_dinov3.sbatch
-```
-
-# Galileo k-NN batch job (encoder embeddings)
-
-- Script: `scripts/galileo/knn_eval_galileo.sbatch` runs a Galileo encoder k-NN eval job.
-- Driver: `src/models/galileo/knn_eval.py` loads `single_file_galileo` weights and computes k-NN metrics on train/val/test splits.
-  The k-NN voting logic is adapted from `nasaharvest/galileo` (`src/eval/knn.py`, MIT License).
-
-## Required inputs
-- `DATA_DIR` (env var): folder with `train/val/test` ImageFolder splits.
-- `WEIGHTS_DIR` (env var): folder containing Galileo `config.json` + `encoder.pt`.
-- Optional env vars: `BAND_INDICES`, `BAND_NAMES`, `VALUE_SCALE`, `NORMALIZE`, `COMPUTE_NDVI`.
-
-## Submit
-```bash
-cd /home/mila/e/echchabo/projects/SDG6-Tracker
-sbatch scripts/galileo/knn_eval_galileo.sbatch
-```
+K-NN metric choices are limited to `cosine` or `l2` (set `KNN_METRIC`), with shared knobs like `K_VALUES`, `BATCH_SIZE`, and `OUTPUT_ROOT`.
