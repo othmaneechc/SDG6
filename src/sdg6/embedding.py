@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import os
+import time
 from typing import Dict, Tuple
 
 import numpy as np
 import torch
-from tqdm import tqdm
 
 from models.base import ModelAdapter
 
@@ -28,7 +29,11 @@ def extract_embeddings(
     labels: list[torch.Tensor] = []
     paths: list[str] = []
 
-    for batch in tqdm(dataloader, desc=desc or f"{adapter.name} embeddings"):
+    total = len(dataloader) if hasattr(dataloader, "__len__") else None
+    rank = int(os.environ.get("RANK", -1))
+    local_rank = int(os.environ.get("LOCAL_RANK", -1))
+    start = time.time()
+    for idx, batch in enumerate(dataloader, start=1):
         images = batch["image"]
         batch_labels = batch["label"]
         paths.extend(batch["path"])
@@ -48,6 +53,23 @@ def extract_embeddings(
 
         feats.append(outputs.detach().cpu())
         labels.append(batch_labels.detach().cpu())
+
+        done = sum(f.shape[0] for f in feats)
+        if total:
+            frac = idx / total
+            elapsed = time.time() - start
+            avg = elapsed / idx
+            eta = avg * (total - idx)
+            prefix = f"[rank {rank} gpu {local_rank}]" if rank >= 0 else "[local]"
+            print(
+                f"{prefix} [progress] {desc or adapter.name} batch {idx}/{total} "
+                f"features={done} (~{frac*100:4.1f}%) "
+                f"elapsed={elapsed:.1f}s eta={eta:.1f}s"
+            )
+        else:
+            elapsed = time.time() - start
+            prefix = f"[rank {rank} gpu {local_rank}]" if rank >= 0 else "[local]"
+            print(f"{prefix} [progress] {desc or adapter.name} batch {idx} features={done} elapsed={elapsed:.1f}s")
 
     if not feats:
         return np.zeros((0, adapter.output_dim), dtype=np.float32), np.zeros((0,), dtype=np.int64), paths

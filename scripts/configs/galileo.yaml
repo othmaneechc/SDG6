@@ -1,0 +1,42 @@
+# Required: which model wrapper to load (galileo|dino|dinov3).
+model: galileo
+# Required: path to folder containing config.json and encoder.pt.
+weights: /home/mila/e/echchabo/scratch/SDG6-Tracker/models/base
+# Required: root containing dataset folders (each with train/val/test).
+data_root: /home/mila/e/echchabo/scratch/SDG6-Tracker/
+# Where to write results (hparams, confusion, embeddings if saved).
+output_root: /home/mila/e/echchabo/scratch/SDG6-Tracker-runs
+# List of dataset names under data_root to evaluate.
+datasets: [SW-s, PW-s]
+# Comma list of k values for k-NN.
+k_values: "5,10,20,50,100"
+# Distance metric for k-NN (cosine or l2).
+knn_metric: cosine
+# Embedding batch size.
+batch_size: 128
+# Dataloader workers.
+num_workers: 4
+# Compute dtype (auto|bf16|fp16|fp32); bf16 speeds up on A100.
+dtype: bf16
+# Galileo positional encoding resolution (meters per pixel).
+galileo_input_resolution_m: 10
+# Patch size override (0 uses checkpoint setting).
+galileo_patch_size: 0
+# Scale raw band values by this factor.
+galileo_value_scale: 1.0
+# Apply Galileo normalization (false keeps raw scale).
+galileo_normalize: true
+# Compute NDVI band (false disables).
+galileo_compute_ndvi: false
+# Month index to use when month cannot be parsed (0-11).
+galileo_default_month_index: 5
+# Pad to square before patching (false to disable).
+galileo_no_pad_square: false
+# Pad to patch boundaries (false to disable).
+galileo_no_pad_to_patch: false
+# Required band indices to select (empty = all bands).
+galileo_band_indices: [0, 1, 2]
+# Required band names to use (empty = infer defaults).
+galileo_band_names: [B2, B3, B4]
+# Write embeddings to disk (npz) if true.
+save_embeddings: false

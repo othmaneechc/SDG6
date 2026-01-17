@@ -1,0 +1,26 @@
+# Required: which model wrapper to load (dino).
+model: dino
+# Required: root dataset folder containing train/val/test splits.
+data_root: /home/mila/e/echchabo/scratch/SDG6-Tracker
+# Required: path to DINO checkpoint (.pth).
+weights: /home/mila/e/echchabo/scratch/checkpoint.pth
+# Where to write results (hparams, confusion, embeddings if saved).
+output_root: /home/mila/e/echchabo/scratch/SDG6-Tracker-runs
+# List of dataset names under data_root to evaluate.
+datasets: [PW-s]
+# Comma list of k values for k-NN.
+k_values: "5,10,20,50,100"
+# Distance metric for k-NN (cosine or l2).
+knn_metric: cosine
+# Embedding batch size.
+batch_size: 64
+# Dataloader workers.
+num_workers: 4
+# DINO backbone (vit_small|vit_base|resnet50...).
+dino_arch: vit_base
+# Patch size for ViT variants.
+dino_patch_size: 8
+# State dict key to load (usually teacher or student).
+dino_checkpoint_key: teacher
+# Write embeddings to disk (npz) if true.
+save_embeddings: false

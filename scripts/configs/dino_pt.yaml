@@ -1,0 +1,29 @@
+# Required: ImageFolder-style training root.
+data_path: /path/to/train_data
+# Where to write training checkpoints/logs.
+output_root: /home/mila/e/echchabo/scratch/SDG6-Tracker/runs/dino-train
+# DINO backbone (vit_small|vit_base|resnet50...).
+arch: vit_base
+# Patch size for ViT variants.
+patch_size: 8
+# Number of training epochs.
+epochs: 200
+# Per-GPU batch size for DINO training.
+batch_size_per_gpu: 64
+# Base learning rate.
+lr: 0.001
+# Use fp16 mixed precision if true.
+use_fp16: true
+# GPUs per node for torchrun.
+gpus_per_node: 2
+# Master port for torchrun rendezvous.
+master_port: 29500
+# Threading env defaults (override as needed).
+omp_num_threads: 8
+mkl_num_threads: 8
+numexpr_num_threads: 8
+torch_nccl_blocking_wait: 1
+torch_nccl_async_error_handling: 1
+torch_nccl_debug: WARN
+torch_nccl_timeout: 1800
+master_addr: 127.0.0.1

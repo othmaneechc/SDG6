@@ -1753,14 +1753,15 @@ def load_model(
 
     def _transform(arr: np.ndarray, path: Path | None = None) -> GalileoInput:
         data = arr
-        if band_indices is not None:
+        if band_indices is not None and len(band_indices) > 0:
             data = data[:, :, band_indices]
         if pad_square:
             data = pad_to_square(data)
         if pad_to_patch_flag and patch_size:
             data = pad_to_patch(data, patch_size)
 
-        names = list(band_names) if band_names is not None else infer_band_names(data.shape[2])
+        # Treat empty list/tuple as None to infer defaults.
+        names = list(band_names) if band_names not in (None, [], ()) else infer_band_names(data.shape[2])
         month_val = default_month_index
         if parse_month_from_name and path is not None:
             parsed = parse_month_from_path(Path(path))

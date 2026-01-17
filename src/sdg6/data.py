@@ -92,11 +92,20 @@ class ImageDataset(Dataset):
                 image = self.transform(image, path=path)
             except TypeError:
                 image = self.transform(image)
+            except Exception as exc:
+                # Log and skip samples that fail transform (e.g., zero-band inputs).
+                print(f"[warn] Skipping sample {path}: {exc}")
+                image = None
         return Sample(image=image, label=label, path=str(path))
 
 
 def collate_samples(samples: list[Sample]) -> dict[str, Any]:
     """Collate list of Sample objects into a training/eval batch."""
+    # Drop samples that failed to load/transform.
+    dropped = len([s for s in samples if s.image is None])
+    samples = [s for s in samples if s.image is not None]
+    if dropped:
+        print(f"[warn] Dropped {dropped} samples in batch due to transform failures.")
     if not samples:
         return {"image": None, "label": None, "path": []}
 
@@ -127,6 +136,9 @@ def build_dataloader(
     shuffle: bool,
     allow_unlabeled: bool = False,
     collate_fn: CollateFn | None = None,
+    distributed: bool = False,
+    world_size: int = 1,
+    rank: int = 0,
 ) -> DataLoader:
     dataset = ImageDataset(
         split_dir,
@@ -135,12 +147,19 @@ def build_dataloader(
         class_to_idx=class_to_idx,
         allow_unlabeled=allow_unlabeled,
     )
+    sampler = None
+    if distributed and world_size > 1:
+        sampler = torch.utils.data.distributed.DistributedSampler(
+            dataset, num_replicas=world_size, rank=rank, shuffle=shuffle
+        )
     return DataLoader(
         dataset,
         batch_size=batch_size,
-        shuffle=shuffle if class_to_idx else False,
+        shuffle=shuffle if (sampler is None and class_to_idx) else False,
         num_workers=num_workers,
         pin_memory=True,
+        drop_last=False,
+        sampler=sampler,
         collate_fn=collate_fn or collate_samples,
     )
 
@@ -156,6 +175,9 @@ def build_dataloaders(
     shuffle_train: bool = False,
     allow_unlabeled: bool = False,
     collate_fn: CollateFn | None = None,
+    distributed: bool = False,
+    world_size: int = 1,
+    rank: int = 0,
 ) -> tuple[dict[str, DataLoader], list[str]]:
     """Create DataLoaders for available splits. Missing splits are skipped."""
     class_names = discover_classes(data_root, splits) if not allow_unlabeled else []
@@ -181,5 +203,8 @@ def build_dataloaders(
             shuffle=shuffle,
             allow_unlabeled=allow_unlabeled,
             collate_fn=collate_fn,
+            distributed=distributed,
+            world_size=world_size,
+            rank=rank,
         )
     return loaders, class_names

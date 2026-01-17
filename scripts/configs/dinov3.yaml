@@ -1,0 +1,23 @@
+# Required: which model wrapper to load (dinov3).
+model: dinov3
+# Required: list of HF model IDs or paths to weights.
+weights:
+  - facebook/dinov3-vitb16-pretrain-lvd1689m
+# Required: root dataset folder containing train/val/test splits.
+data_root: /home/mila/e/echchabo/scratch/SDG6-Tracker
+# Where to write results (hparams, confusion, embeddings if saved).
+output_root: /home/mila/e/echchabo/scratch/SDG6-Tracker-runs
+# List of dataset names under data_root to evaluate.
+datasets: [PW-s]
+# Comma list of k values for k-NN.
+k_values: "5,10,20,50,100"
+# Distance metric for k-NN (cosine or l2).
+knn_metric: cosine
+# Embedding batch size.
+batch_size: 64
+# Dataloader workers.
+num_workers: 4
+# Weight variant selection (auto|lvd|sat).
+dinov3_weights_type: auto
+# Write embeddings to disk (npz) if true.
+save_embeddings: false
