@@ -1,0 +1,19 @@
+# Batch Sentinel downloads from country tiles
+service_account: signature-work@signature-work-403906.iam.gserviceaccount.com
+key_path: /dkucc/home/oe23/SDG6-Tracker/gee_key.json
+countries_dir: /dkucc/home/oe23/SDG6-Tracker/data/meta_pop_data/countries_2x2
+output_root: /work/lamlab/data/countries
+# Dataset/bands
+dataset: sentinel
+band: RGB
+# Date window
+start_date: "2022-01-01"
+end_date: "2022-12-31"
+# Tiles
+tile_size: 256
+tiles_glob: "*_tiles.csv"
+parallel_workers: 30
+redownload: true
+sharpened: false
+# Optional: limit to specific countries (comma-separated list)
+# countries: "Kenya,Nigeria"

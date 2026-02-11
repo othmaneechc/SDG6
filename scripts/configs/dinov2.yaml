@@ -1,0 +1,27 @@
+# Required: which model wrapper to load (dinov2).
+model: dinov2
+# Required: root dataset folder containing train/val/test splits.
+data_root: /work/lamlab/data/SW-s
+# Required: path to DINOv2 teacher checkpoint (.pth).
+weights: /dkucc/home/nt140/dinov2/outputs/test1_1_12_2025_large_ps8_bs16_s/eval/training_62499/teacher_checkpoint.pth
+# Required: DINOv2 config yaml used for training or generated config.yaml.
+dinov2_config: /dkucc/home/nt140/dinov2/outputs/test1_1_12_2025_large_ps8_bs16_s/config.yaml
+# DINOv2 checkpoint key (teacher|student|None).
+dinov2_checkpoint_key: teacher
+# Where to write results (hparams, confusion, embeddings if saved).
+output_root: /dkucc/home/nt140/dinov2/outputs/knn_runs
+# List of dataset names under data_root to evaluate.
+datasets: [SW-s]
+# Comma list of k values for k-NN.
+k_values: "10,20,50,100,200"
+# Distance metric for k-NN (cosine or l2).
+knn_metric: cosine
+# Embedding batch size.
+batch_size: 128
+# Dataloader workers.
+num_workers: 4
+# Write embeddings to disk (npz) if true.
+save_embeddings: false
+# Resize/crop for eval transforms.
+dinov2_resize: 256
+dinov2_crop: 224

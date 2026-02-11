@@ -1,21 +1,21 @@
 # Required: ImageFolder-style training root.
-data_path: /path/to/train_data
+data_path: /work/lamlab/data/PW-s
 # Where to write training checkpoints/logs.
-output_root: /home/mila/e/echchabo/scratch/SDG6-Tracker/runs/dino-train
+output_root: /work/lamlab/data/dinos-train
 # DINO backbone (vit_small|vit_base|resnet50...).
 arch: vit_base
 # Patch size for ViT variants.
 patch_size: 8
 # Number of training epochs.
-epochs: 200
+epochs: 300
 # Per-GPU batch size for DINO training.
-batch_size_per_gpu: 64
+batch_size_per_gpu: 16
 # Base learning rate.
-lr: 0.001
+lr: 0.0003
 # Use fp16 mixed precision if true.
 use_fp16: true
 # GPUs per node for torchrun.
-gpus_per_node: 2
+gpus_per_node: 8
 # Master port for torchrun rendezvous.
 master_port: 29500
 # Threading env defaults (override as needed).

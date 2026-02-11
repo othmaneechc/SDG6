@@ -1,0 +1,21 @@
+# Default config for running the GEE exporter inside SDG6-Tracker
+service_account: signature-work@signature-work-403906.iam.gserviceaccount.com
+key_path: /dkucc/home/oe23/UM6P/gee-exporter/gee_key.json
+dataset: sentinel
+coords_csv: /dkucc/home/oe23/UM6P/gee-exporter/coordinates/coordinates.csv
+output_dir: data/gee_exports/sentinel_rgb
+start_date: "2024-01-01"
+end_date: "2024-12-31"
+height: 512
+width: 512
+band: RGB
+sharpened: false
+parallel_workers: 8
+redownload: false
+country: Morocco
+mode: point
+# Grid defaults used for region-tiles mode (e.g., modis_*, sentinel1)
+tile_nx: 5
+tile_ny: 4
+crs: EPSG:3857
+opt_url: https://earthengine-highvolume.googleapis.com

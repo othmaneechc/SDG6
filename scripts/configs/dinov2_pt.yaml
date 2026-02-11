@@ -1,0 +1,24 @@
+# DINOv2 pretraining config (wrapper uses the DINOv2 repo + uv).
+# Required: local DINOv2 repo path.
+dinov2_repo: /dkucc/home/oe23/dinov2
+# Required: DINOv2 training config yaml.
+config_file: /dkucc/home/oe23/SDG6-Tracker/scripts/configs/sat_vit.yaml
+# Required: output directory for this run.
+output_dir: /dkucc/home/oe23/
+# GPUs per node for torchrun.
+gpus_per_node: 8
+# Master port for torchrun rendezvous.
+master_port: 29500
+# Whether to unset SLURM env vars before launch.
+unset_slurm_env: true
+# Threading/NCCL defaults (override as needed).
+omp_num_threads: 8
+mkl_num_threads: 8
+numexpr_num_threads: 8
+torch_nccl_blocking_wait: 1
+torch_nccl_async_error_handling: 1
+torch_nccl_debug: WARN
+torch_nccl_timeout: 1800
+master_addr: 127.0.0.1
+# Extra args appended to the DINOv2 train command.
+extra_args: []

@@ -6,10 +6,11 @@ This repo now exposes a single, model-agnostic pipeline for extracting embedding
 - **One dataloader for everything**: `sdg6.data.build_dataloaders` feeds the same batch schema (`{"image", "label", "path"}`) to embedding, k-NN evaluation, and DINO training loops (set `allow_unlabeled=True` for self-supervised data).
 - **Single-file model adapters** under `src/models/`:
   - `dino.py` wraps the DINO ViT dependency (provide your checkpoint path).
+  - `dinov2.py` wraps local DINOv2 checkpoints (provide config + weights).
   - `dinov3.py` wraps Hugging Face checkpoints.
   - `galileo.py` wraps the local Galileo encoder + weights folder.
 - **Model-agnostic CLI**: switch models with one flag; everything else (data handling, embedding extraction, k-NN) stays identical.
-- **Dependencies only**: DINO code comes from the installed `dino` package; Galileo is fully contained in `src/models/galileo.py`.
+- **Dependencies only**: DINO code comes from the installed `dino` package; DINOv2 uses a local repo path (`DINOV2_REPO`) or an installed package; Galileo is fully contained in `src/models/galileo.py`.
 
 ## Layout
 ```
@@ -45,11 +46,31 @@ python -m sdg6.cli \
   --weights /path/to/dino/checkpoint.pth \
   --dino-arch vit_base --dino-patch-size 8 --dino-checkpoint-key teacher \
   --data-dir /path/to/PW-m
+
+# DINOv2 (dependency + checkpoint)
+python -m sdg6.cli \
+  --model dinov2 \
+  --weights /path/to/dinov2/teacher_checkpoint.pth \
+  --dinov2-config /path/to/dinov2/config.yaml \
+  --data-dir /path/to/PW-m
 ```
 
 Outputs:
 - Embeddings cached under `OUTPUT_DIR/embeddings/<split>.npz`
 - Confusion matrices + reports under `OUTPUT_DIR/confusion/`
+
+## GEE image export
+- New module under [src/gee_export](src/gee_export) lets you download imagery using the existing UM6P service account key. Update the defaults in [scripts/configs/gee_export.yaml](scripts/configs/gee_export.yaml) to point at your key, coordinates CSV, and output directory.
+- Run with the same config-first pattern as the rest of the repo:
+
+```bash
+export PYTHONPATH=src
+python -m gee_export.cli --config scripts/configs/gee_export.yaml
+
+# Override anything from the CLI (e.g., different dataset or coordinate file)
+python -m gee_export.cli --config scripts/configs/gee_export.yaml --dataset landsat --coords-csv /path/to/coords.csv
+```
+- Modes auto-select from the dataset unless you set `mode` explicitly: `point` (default), `region-tiles` (MODIS, Sentinel-1, etc.), `region-summary` (CHIRPS/ERA5/TerraClimate/GPW), and `soilgrids`.
 
 ## Adding a new model
 1. Drop a new file under `src/models/<name>.py` that returns a `ModelAdapter` with:

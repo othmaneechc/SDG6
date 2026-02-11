@@ -1,9 +1,8 @@
-"""Launcher for DINO pretraining/fine-tuning driven by a YAML config."""
+"""Launcher for DINOv2 pretraining driven by a YAML config."""
 
 from __future__ import annotations
 
 import argparse
-import datetime as dt
 import os
 import subprocess
 from pathlib import Path
@@ -15,11 +14,11 @@ except Exception as exc:  # pragma: no cover - dependency check
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="DINO training wrapper.")
+    parser = argparse.ArgumentParser(description="DINOv2 training wrapper.")
     parser.add_argument(
         "--config",
         type=Path,
-        default=Path("scripts/configs/dino_pt.yaml"),
+        default=Path("scripts/configs/dinov2_pt.yaml"),
         help="Path to YAML with training hyperparameters.",
     )
     args = parser.parse_args()
@@ -44,51 +43,48 @@ def main() -> None:
     for k, v in env_defaults.items():
         os.environ.setdefault(k, str(v))
 
+    if bool(get("unset_slurm_env", True)):
+        os.environ.pop("SLURM_JOB_ID", None)
+        os.environ.pop("SLURM_PROCID", None)
+        os.environ.pop("SLURM_LOCALID", None)
+
     gpus = int(get("gpus_per_node", 2))
     master_port = int(get("master_port", 29500))
-    data_path = Path(get("data_path", "/path/to/train_data")).expanduser().resolve()
-    output_root = Path(get("output_root", repo / "runs" / "dino-train")).expanduser()
-    arch = str(get("arch", "vit_base"))
-    patch_size = int(get("patch_size", 8))
-    epochs = int(get("epochs", 200))
-    batch_size_per_gpu = int(get("batch_size_per_gpu", 64))
-    lr = float(get("lr", 0.001))
-    use_fp16 = bool(get("use_fp16", True))
+    dinov2_repo = Path(get("dinov2_repo", "/dkucc/home/oe23/dinov2_")).expanduser().resolve()
+    config_file = Path(get("config_file", dinov2_repo / "dinov2/configs/train/sat_vit.yaml")).expanduser().resolve()
+    output_dir = Path(get("output_dir", "/tmp/dinov2-outputs")).expanduser().resolve()
+    extra_args = get("extra_args", []) or []
 
-    data_name = data_path.name
-    run_ts = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = output_root / f"{arch}_p{patch_size}_{data_name}"
+    if not dinov2_repo.exists():
+        raise FileNotFoundError(f"DINOv2 repo not found: {dinov2_repo}")
+    if not config_file.exists():
+        raise FileNotFoundError(f"DINOv2 config not found: {config_file}")
+
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"Training DINO: arch={arch}, patch={patch_size}, data={data_path}, out={output_dir}")
-
     cmd = [
+        "uv",
+        "run",
+        "--project",
+        str(repo),
+        "--",
         "torchrun",
         "--nproc_per_node",
         str(gpus),
         "--master_port",
         str(master_port),
-        "-m",
-        "dino.main_dino",
-        "--arch",
-        arch,
-        "--data_path",
-        str(data_path),
-        "--output_dir",
+        "dinov2/train/train.py",
+        "--config-file",
+        str(config_file),
+        "--output-dir",
         str(output_dir),
-        "--epochs",
-        str(epochs),
-        "--batch_size_per_gpu",
-        str(batch_size_per_gpu),
-        "--patch_size",
-        str(patch_size),
-        "--lr",
-        str(lr),
-        "--use_fp16",
-        str(use_fp16).lower(),
     ]
+    cmd += [str(arg) for arg in extra_args]
 
-    subprocess.run(cmd, check=True, cwd=repo)
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{dinov2_repo}:{env.get('PYTHONPATH', '')}"
+
+    subprocess.run(cmd, check=True, cwd=dinov2_repo, env=env)
 
 
 if __name__ == "__main__":  # pragma: no cover

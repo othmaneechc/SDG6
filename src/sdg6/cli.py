@@ -101,6 +101,20 @@ def build_parser() -> argparse.ArgumentParser:
     dv3 = parser.add_argument_group("dinov3")
     dv3.add_argument("--dinov3-weights-type", type=str, choices=["auto", "lvd", "sat"], default="auto")
 
+    # DINOv2-only knobs
+    dv2 = parser.add_argument_group("dinov2")
+    dv2.add_argument("--dinov2-config", type=Path, default=None, help="Path to DINOv2 config YAML.")
+    dv2.add_argument("--dinov2-repo", type=Path, default=None, help="Path to local DINOv2 repo if not installed.")
+    dv2.add_argument("--dinov2-checkpoint-key", type=str, default="teacher", help="Checkpoint key to load.")
+    dv2.add_argument("--dinov2-resize", type=int, default=256, help="Resize shorter side before center crop.")
+    dv2.add_argument("--dinov2-crop", type=int, default=224, help="Center crop size.")
+    dv2.add_argument(
+        "--dinov2-opts",
+        nargs="*",
+        default=None,
+        help="Extra OmegaConf overrides (e.g. train.batch_size_per_gpu=16).",
+    )
+
     # Galileo-only knobs
     gal = parser.add_argument_group("galileo")
     gal.add_argument("--galileo-band-indices", type=str, default=None, help="Comma-separated band indices to select.")
@@ -202,6 +216,11 @@ def main() -> None:
                 print(f"[rank {rank}] Save emb       : {args.save_embeddings}")
                 if args.model == "dino":
                     print(f"[rank {rank}] DINO arch      : {args.dino_arch}  patch: {args.dino_patch_size}  key: {args.dino_checkpoint_key}")
+                elif args.model == "dinov2":
+                    print(
+                        f"[rank {rank}] DINOv2 config  : {args.dinov2_config or 'unset'}  "
+                        f"key: {args.dinov2_checkpoint_key}"
+                    )
                 elif args.model == "dinov3":
                     print(f"[rank {rank}] DINOv3 weights : {weights}  type: {args.dinov3_weights_type}")
                 else:
@@ -224,6 +243,21 @@ def main() -> None:
                     checkpoint_key=args.dino_checkpoint_key,
                     resize_size=args.dino_resize,
                     crop_size=args.dino_crop,
+                )
+            elif args.model == "dinov2":
+                if not args.dinov2_config:
+                    raise RuntimeError("DINOv2 requires --dinov2-config or 'dinov2_config' in the config file.")
+                adapter = load_model(
+                    "dinov2",
+                    weights=weights,
+                    config_file=args.dinov2_config,
+                    repo_dir=args.dinov2_repo,
+                    device=device,
+                    dtype=dtype,
+                    checkpoint_key=args.dinov2_checkpoint_key,
+                    resize_size=args.dinov2_resize,
+                    crop_size=args.dinov2_crop,
+                    opts=_parse_str_list(args.dinov2_opts),
                 )
             elif args.model == "dinov3":
                 adapter = load_model(
