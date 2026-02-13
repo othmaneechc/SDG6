@@ -61,8 +61,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("--k-values", type=str, default="1,5,10,20,50,100", help="Comma-separated k list.")
     parser.add_argument("--knn-metric", type=str, choices=["cosine", "l2"], default="cosine")
-    parser.add_argument("--knn-weights", type=str, choices=["uniform", "distance", "softmax"], default="uniform")
+    parser.add_argument("--knn-weights", type=str, choices=["uniform", "distance", "softmax"], default="softmax")
     parser.add_argument("--knn-softmax-temp", type=float, default=0.07, help="Temperature for softmax weights.")
+    parser.add_argument(
+        "--knn-classifier-path",
+        type=Path,
+        default=None,
+        help="Optional path to save a k-NN classifier artifact (npz).",
+    )
     parser.add_argument("--pca-dim", type=int, default=0, help="Apply PCA to this dimension before k-NN (0 disables).")
     parser.add_argument(
         "--output-dir",
@@ -382,6 +388,7 @@ def main() -> None:
                 softmax_temp=args.knn_softmax_temp,
                 pca_dim=args.pca_dim,
                 output_dir=out_dir,
+                classifier_path=args.knn_classifier_path,
             )
 
             print("\n=== k-NN results ===")

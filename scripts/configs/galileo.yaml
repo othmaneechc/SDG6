@@ -1,17 +1,21 @@
 # Required: which model wrapper to load (galileo|dino|dinov3).
 model: galileo
 # Required: path to folder containing config.json and encoder.pt.
-weights: /home/mila/e/echchabo/scratch/SDG6-Tracker/models/base
+weights: models/galileo/base
 # Required: root containing dataset folders (each with train/val/test).
-data_root: /home/mila/e/echchabo/scratch/SDG6-Tracker/
+data_root: data
 # Where to write results (hparams, confusion, embeddings if saved).
-output_root: /home/mila/e/echchabo/scratch/SDG6-Tracker-runs
+output_root: runs
 # List of dataset names under data_root to evaluate.
 datasets: [SW-s, PW-s]
 # Comma list of k values for k-NN.
 k_values: "5,10,20,50,100"
 # Distance metric for k-NN (cosine or l2).
 knn_metric: cosine
+# DINOv2-aligned voting weights (softmax only).
+knn_weights: softmax
+# Softmax temperature for k-NN voting.
+knn_softmax_temp: 0.07
 # Embedding batch size.
 batch_size: 128
 # Dataloader workers.

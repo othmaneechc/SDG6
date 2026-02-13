@@ -50,7 +50,7 @@ def main() -> None:
 
     gpus = int(get("gpus_per_node", 2))
     master_port = int(get("master_port", 29500))
-    dinov2_repo = Path(get("dinov2_repo", "/dkucc/home/oe23/dinov2_")).expanduser().resolve()
+    dinov2_repo = Path(get("dinov2_repo", repo.parent / "dinov2")).expanduser().resolve()
     config_file = Path(get("config_file", dinov2_repo / "dinov2/configs/train/sat_vit.yaml")).expanduser().resolve()
     output_dir = Path(get("output_dir", "/tmp/dinov2-outputs")).expanduser().resolve()
     extra_args = get("extra_args", []) or []

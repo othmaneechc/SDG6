@@ -1,17 +1,21 @@
 # Required: which model wrapper to load (dino).
 model: dino
 # Required: root dataset folder containing train/val/test splits.
-data_root: /home/mila/e/echchabo/scratch/SDG6-Tracker
+data_root: data
 # Required: path to DINO checkpoint (.pth).
-weights: /home/mila/e/echchabo/scratch/checkpoint.pth
+weights: models/checkpoint.pth
 # Where to write results (hparams, confusion, embeddings if saved).
-output_root: /home/mila/e/echchabo/scratch/SDG6-Tracker-runs
+output_root: runs
 # List of dataset names under data_root to evaluate.
 datasets: [PW-s]
 # Comma list of k values for k-NN.
 k_values: "5,10,20,50,100"
 # Distance metric for k-NN (cosine or l2).
 knn_metric: cosine
+# DINOv2-aligned voting weights (softmax only).
+knn_weights: softmax
+# Softmax temperature for k-NN voting.
+knn_softmax_temp: 0.07
 # Embedding batch size.
 batch_size: 64
 # Dataloader workers.

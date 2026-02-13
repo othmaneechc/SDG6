@@ -8,7 +8,7 @@
   # head_n_prototypes: 131072
 train:
   batch_size_per_gpu: 16
-  dataset_path: CustomSatellite:split=TRAIN:root=/work/lamlab/data/PW-l/
+  dataset_path: CustomSatellite:split=TRAIN:root=data/PW-l/
   centering: "sinkhorn_knopp"
 student:
   arch: vit_large

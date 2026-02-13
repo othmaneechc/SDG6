@@ -4,6 +4,7 @@ All k-NN jobs now read hyperparameters from `scripts/configs/*.yaml` and simply 
 
 - `scripts/dino.sbatch` — k-NN for DINO checkpoints (config: `scripts/configs/dino.yaml`).
 - `scripts/dinov2.sbatch` — k-NN for DINOv2 checkpoints (config: `scripts/configs/dinov2.yaml`).
+- `scripts/dinov2_infer.sbatch` — DINOv2 k-NN inference on arbitrary images (config: `scripts/configs/dinov2_infer.yaml`).
 - `scripts/dinov3.sbatch` — k-NN for Hugging Face DINOv3 (config: `scripts/configs/dinov3.yaml`).
 - `scripts/galileo.sbatch` — k-NN for local Galileo encoder weights (config: `scripts/configs/galileo.yaml`).
 - `scripts/dino_pt.sbatch` — DINO pretraining/fine-tuning via `dino.main_dino` (config: `scripts/configs/dino_pt.yaml`).

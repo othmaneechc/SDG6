@@ -1,7 +1,7 @@
 # Required: ImageFolder-style training root.
-data_path: /work/lamlab/data/PW-s
+data_path: data/PW-s
 # Where to write training checkpoints/logs.
-output_root: /work/lamlab/data/dinos-train
+output_root: runs/dinos-train
 # DINO backbone (vit_small|vit_base|resnet50...).
 arch: vit_base
 # Patch size for ViT variants.

@@ -1,10 +1,10 @@
 # DINOv2 pretraining config (wrapper uses the DINOv2 repo + uv).
 # Required: local DINOv2 repo path.
-dinov2_repo: /dkucc/home/oe23/dinov2
+dinov2_repo: ../dinov2
 # Required: DINOv2 training config yaml.
-config_file: /dkucc/home/oe23/SDG6-Tracker/scripts/configs/sat_vit.yaml
+config_file: scripts/configs/sat_vit.yaml
 # Required: output directory for this run.
-output_dir: /dkucc/home/oe23/
+output_dir: runs/dinov2
 # GPUs per node for torchrun.
 gpus_per_node: 8
 # Master port for torchrun rendezvous.

@@ -1,21 +1,25 @@
 # Required: which model wrapper to load (dinov2).
 model: dinov2
-# Required: root dataset folder containing train/val/test splits.
-data_root: /work/lamlab/data/SW-s
+# Required: dataset folder containing train/val/test splits.
+data_dir: data/SW-s
 # Required: path to DINOv2 teacher checkpoint (.pth).
-weights: /dkucc/home/nt140/dinov2/outputs/test1_1_12_2025_large_ps8_bs16_s/eval/training_62499/teacher_checkpoint.pth
+weights: runs/dinov2/teacher_checkpoint.pth
 # Required: DINOv2 config yaml used for training or generated config.yaml.
-dinov2_config: /dkucc/home/nt140/dinov2/outputs/test1_1_12_2025_large_ps8_bs16_s/config.yaml
+dinov2_config: scripts/configs/sat_vit.yaml
 # DINOv2 checkpoint key (teacher|student|None).
 dinov2_checkpoint_key: teacher
 # Where to write results (hparams, confusion, embeddings if saved).
-output_root: /dkucc/home/nt140/dinov2/outputs/knn_runs
-# List of dataset names under data_root to evaluate.
-datasets: [SW-s]
+output_root: runs/dinov2
 # Comma list of k values for k-NN.
-k_values: "10,20,50,100,200"
+k_values: "5,10,20,50,100,200"
 # Distance metric for k-NN (cosine or l2).
 knn_metric: cosine
+# DINOv2-aligned voting weights (softmax only).
+knn_weights: softmax
+# Softmax temperature for k-NN voting.
+knn_softmax_temp: 0.07
+# Optional: path to save the k-NN classifier artifact.
+knn_classifier_path: runs/dinov2/knn_classifier_sw-s.npz
 # Embedding batch size.
 batch_size: 128
 # Dataloader workers.

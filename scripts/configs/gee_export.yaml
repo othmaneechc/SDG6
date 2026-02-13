@@ -1,8 +1,8 @@
 # Default config for running the GEE exporter inside SDG6-Tracker
 service_account: signature-work@signature-work-403906.iam.gserviceaccount.com
-key_path: /dkucc/home/oe23/UM6P/gee-exporter/gee_key.json
+key_path: gee_key.json
 dataset: sentinel
-coords_csv: /dkucc/home/oe23/UM6P/gee-exporter/coordinates/coordinates.csv
+coords_csv: data/coordinates/coordinates.csv
 output_dir: data/gee_exports/sentinel_rgb
 start_date: "2024-01-01"
 end_date: "2024-12-31"

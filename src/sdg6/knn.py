@@ -1,14 +1,13 @@
-"""Model-agnostic k-NN evaluation helpers."""
+"""Model-agnostic k-NN evaluation helpers aligned to DINOv2 logic."""
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Tuple
 
 import numpy as np
-from sklearn.decomposition import PCA
+import torch
 from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.neighbors import KNeighborsClassifier
 
 
 def parse_k_values(value: str | Iterable[int]) -> List[int]:
@@ -18,12 +17,82 @@ def parse_k_values(value: str | Iterable[int]) -> List[int]:
     return [int(v) for v in value]
 
 
-def _softmax_weights(temp: float) -> Callable[[np.ndarray], np.ndarray]:
-    def _fn(distances: np.ndarray) -> np.ndarray:
-        d = np.asarray(distances)
-        return np.exp(-d / temp)
+def _as_torch(x: np.ndarray, device: torch.device) -> torch.Tensor:
+    return torch.as_tensor(x, device=device, dtype=torch.float32)
 
-    return _fn
+
+def _normalize(x: torch.Tensor) -> torch.Tensor:
+    return torch.nn.functional.normalize(x, dim=1)
+
+
+def _knn_softmax_vote(
+    train_features: torch.Tensor,
+    train_labels: torch.Tensor,
+    eval_features: torch.Tensor,
+    *,
+    num_classes: int,
+    k_values: List[int],
+    temperature: float,
+    chunk_size: int = 1024,
+) -> dict[int, np.ndarray]:
+    max_k = max(k_values)
+    preds_per_k: dict[int, list[np.ndarray]] = {k: [] for k in k_values}
+
+    for start in range(0, eval_features.shape[0], chunk_size):
+        end = min(start + chunk_size, eval_features.shape[0])
+        feats = eval_features[start:end]
+
+        sims = feats @ train_features.T
+        topk_sims, indices = sims.topk(max_k, dim=1, largest=True, sorted=True)
+        neighbor_labels = train_labels[indices]
+
+        weights = torch.softmax(topk_sims / temperature, dim=1)
+        weighted = torch.nn.functional.one_hot(neighbor_labels, num_classes=num_classes) * weights.unsqueeze(-1)
+
+        for k in k_values:
+            probs = weighted[:, :k, :].sum(dim=1)
+            preds = probs.argmax(dim=1)
+            preds_per_k[k].append(preds.cpu().numpy())
+
+    return {k: np.concatenate(chunks, axis=0) for k, chunks in preds_per_k.items()}
+
+
+def _knn_softmax_vote_with_probs(
+    train_features: torch.Tensor,
+    train_labels: torch.Tensor,
+    eval_features: torch.Tensor,
+    *,
+    num_classes: int,
+    k_values: List[int],
+    temperature: float,
+    chunk_size: int = 1024,
+) -> dict[int, tuple[np.ndarray, np.ndarray]]:
+    max_k = max(k_values)
+    preds_per_k: dict[int, list[np.ndarray]] = {k: [] for k in k_values}
+    probs_per_k: dict[int, list[np.ndarray]] = {k: [] for k in k_values}
+
+    for start in range(0, eval_features.shape[0], chunk_size):
+        end = min(start + chunk_size, eval_features.shape[0])
+        feats = eval_features[start:end]
+
+        sims = feats @ train_features.T
+        topk_sims, indices = sims.topk(max_k, dim=1, largest=True, sorted=True)
+        neighbor_labels = train_labels[indices]
+
+        weights = torch.softmax(topk_sims / temperature, dim=1)
+        weighted = torch.nn.functional.one_hot(neighbor_labels, num_classes=num_classes) * weights.unsqueeze(-1)
+
+        for k in k_values:
+            probs = weighted[:, :k, :].sum(dim=1)
+            preds = probs.argmax(dim=1)
+            max_probs = probs.max(dim=1).values
+            preds_per_k[k].append(preds.cpu().numpy())
+            probs_per_k[k].append(max_probs.cpu().numpy())
+
+    return {
+        k: (np.concatenate(preds_per_k[k], axis=0), np.concatenate(probs_per_k[k], axis=0))
+        for k in k_values
+    }
 
 
 def evaluate_knn(
@@ -38,24 +107,36 @@ def evaluate_knn(
     softmax_temp: float = 0.07,
     pca_dim: int = 0,
     output_dir: Path | None = None,
+    classifier_path: Path | None = None,
 ) -> List[dict]:
-    """Fit a k-NN classifier on train embeddings and evaluate on provided splits."""
+    """Evaluate k-NN using DINOv2-style softmax voting over cosine similarities."""
     if train_features.size == 0:
         raise ValueError("Empty training embeddings; cannot run k-NN.")
 
-    metric_arg = "cosine" if metric == "cosine" else "euclidean"
-    weights_arg: str | Callable[[np.ndarray], np.ndarray]
-    if weights == "softmax":
-        weights_arg = _softmax_weights(softmax_temp)
-    else:
-        weights_arg = weights
+    if metric != "cosine":
+        raise ValueError("DINOv2-aligned k-NN only supports cosine similarity.")
+    if weights != "softmax":
+        raise ValueError("DINOv2-aligned k-NN only supports softmax voting.")
+    if pca_dim:
+        raise ValueError("DINOv2-aligned k-NN does not apply PCA.")
 
-    Xtr = train_features
-    ytr = train_labels
-    if pca_dim and Xtr.shape[1] > pca_dim:
-        pca = PCA(n_components=pca_dim, random_state=0)
-        Xtr = pca.fit_transform(Xtr)
-        eval_sets = {name: (pca.transform(x), y) for name, (x, y) in eval_sets.items()}
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    Xtr = _normalize(_as_torch(train_features, device))
+    ytr = torch.as_tensor(train_labels, device=device, dtype=torch.long)
+
+    k_list = parse_k_values(k_values)
+    num_classes = len(class_names)
+
+    if classifier_path is not None:
+        classifier_path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            classifier_path,
+            train_features=train_features,
+            train_labels=train_labels,
+            class_names=np.array(class_names),
+            k_values=np.array(k_list, dtype=np.int64),
+            softmax_temp=np.array([softmax_temp], dtype=np.float32),
+        )
 
     if output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -66,23 +147,26 @@ def evaluate_knn(
         confusion_dir = None
 
     results: list[dict] = []
-    for k in parse_k_values(k_values):
-        knn = KNeighborsClassifier(
-            n_neighbors=k,
-            metric=metric_arg,
-            weights=weights_arg,
-            n_jobs=8,
-        )
-        knn.fit(Xtr, ytr)
+    split_metrics_per_k: dict[int, dict[str, dict]] = {k: {} for k in k_list}
+    for split_name, (Xev, yev) in eval_sets.items():
+        if Xev.size == 0:
+            for k in k_list:
+                split_metrics_per_k[k][split_name] = {"acc": float("nan")}
+            continue
 
-        split_metrics: dict[str, dict] = {}
-        for split_name, (Xev, yev) in eval_sets.items():
-            if Xev.size == 0:
-                split_metrics[split_name] = {"acc": float("nan")}
-                continue
-            preds = knn.predict(Xev)
+        Xev_t = _normalize(_as_torch(Xev, device))
+        preds_per_k = _knn_softmax_vote(
+            Xtr,
+            ytr,
+            Xev_t,
+            num_classes=num_classes,
+            k_values=k_list,
+            temperature=softmax_temp,
+        )
+
+        for k, preds in preds_per_k.items():
             acc = float(np.mean(preds == yev))
-            split_metrics[split_name] = {"acc": acc}
+            split_metrics_per_k[k][split_name] = {"acc": acc}
 
             if confusion_dir is not None:
                 cm = confusion_matrix(yev, preds, labels=list(range(len(class_names))))
@@ -103,6 +187,68 @@ def evaluate_knn(
                     f.write(report)
                     f.write("\n")
 
-        results.append({"k": k, "splits": split_metrics})
+    for k in k_list:
+        results.append({"k": k, "splits": split_metrics_per_k[k]})
 
     return results
+
+
+def load_knn_classifier(path: Path) -> dict:
+    data = np.load(path, allow_pickle=True)
+    return {
+        "train_features": data["train_features"],
+        "train_labels": data["train_labels"],
+        "class_names": [str(x) for x in data["class_names"].tolist()],
+        "k_values": [int(x) for x in data["k_values"].tolist()],
+        "softmax_temp": float(np.array(data["softmax_temp"]).reshape(-1)[0]),
+    }
+
+
+def predict_knn(
+    classifier: dict,
+    eval_features: np.ndarray,
+    *,
+    k_values: Iterable[int] | None = None,
+    temperature: float | None = None,
+) -> dict[int, np.ndarray]:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    Xtr = _normalize(_as_torch(classifier["train_features"], device))
+    ytr = torch.as_tensor(classifier["train_labels"], device=device, dtype=torch.long)
+    Xev = _normalize(_as_torch(eval_features, device))
+
+    k_list = list(k_values) if k_values is not None else list(classifier["k_values"])
+    temp = float(temperature) if temperature is not None else float(classifier["softmax_temp"])
+    num_classes = len(classifier["class_names"])
+    return _knn_softmax_vote(
+        Xtr,
+        ytr,
+        Xev,
+        num_classes=num_classes,
+        k_values=k_list,
+        temperature=temp,
+    )
+
+
+def predict_knn_with_probs(
+    classifier: dict,
+    eval_features: np.ndarray,
+    *,
+    k_values: Iterable[int] | None = None,
+    temperature: float | None = None,
+) -> dict[int, tuple[np.ndarray, np.ndarray]]:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    Xtr = _normalize(_as_torch(classifier["train_features"], device))
+    ytr = torch.as_tensor(classifier["train_labels"], device=device, dtype=torch.long)
+    Xev = _normalize(_as_torch(eval_features, device))
+
+    k_list = list(k_values) if k_values is not None else list(classifier["k_values"])
+    temp = float(temperature) if temperature is not None else float(classifier["softmax_temp"])
+    num_classes = len(classifier["class_names"])
+    return _knn_softmax_vote_with_probs(
+        Xtr,
+        ytr,
+        Xev,
+        num_classes=num_classes,
+        k_values=k_list,
+        temperature=temp,
+    )

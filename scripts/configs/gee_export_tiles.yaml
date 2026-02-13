@@ -1,8 +1,8 @@
 # Batch Sentinel downloads from country tiles
 service_account: signature-work@signature-work-403906.iam.gserviceaccount.com
-key_path: /dkucc/home/oe23/SDG6-Tracker/gee_key.json
-countries_dir: /dkucc/home/oe23/SDG6-Tracker/data/meta_pop_data/countries_2x2
-output_root: /work/lamlab/data/countries
+key_path: gee_key.json
+countries_dir: data/meta_pop_data/countries_2x2
+output_root: data/countries
 # Dataset/bands
 dataset: sentinel
 band: RGB

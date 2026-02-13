@@ -21,8 +21,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--base-dir",
         type=Path,
-        default=Path("/work/lamlab/data"),
-        help="Root directory containing R7, R8, R9 folders.",
+        default=Path("DATABASE/RAW"),
+        help="Root directory containing R7, R8, R9 folders and CSVs.",
     )
     parser.add_argument(
         "--rounds",
@@ -276,5 +276,5 @@ if __name__ == "__main__":
     main()
 
 """
-python3 data/prepare_datasets.py --output-dir /home/mila/e/echchabo/scratch
+python3 data/prepare_datasets.py --output-dir data
 """
