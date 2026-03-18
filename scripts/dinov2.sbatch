@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=sdg6-dinov2-knn
 #SBATCH --partition=main
-#SBATCH --gres=gpu:8
+#SBATCH --gres=gpu:a100:2
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=48G
 #SBATCH --time=24:00:00
@@ -26,7 +26,8 @@ fi
 cd "${REPO}"
 mkdir -p "${REPO}/log"
 echo "Starting dinov2 job at $(date) with CONFIG=${CONFIG}"
-GPUS_PER_NODE="${GPUS_PER_NODE:-8}"
+
+GPUS_PER_NODE="${GPUS_PER_NODE:-2}"
 MASTER_PORT="${MASTER_PORT:-29500}"
 if [[ "${GPUS_PER_NODE}" -gt 1 ]]; then
   torchrun --nproc_per_node="${GPUS_PER_NODE}" --master_port="${MASTER_PORT}" -m sdg6.cli --config "${CONFIG}" "$@"

@@ -370,8 +370,8 @@ def main() -> None:
 
             train_feats, train_labels, _ = split_outputs.get("train", (np.zeros((0, 1)), np.zeros((0,)), []))
             eval_sets = {
-                split: (feats, labels)
-                for split, (feats, labels, _) in split_outputs.items()
+                split: (feats, labels, paths)
+                for split, (feats, labels, paths) in split_outputs.items()
                 if split != "train"
             }
             if not eval_sets:

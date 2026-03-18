@@ -13,7 +13,7 @@ input_dir: data/PW-s/test
 # Output CSV with predictions.
 output_csv: runs/dinov2/knn_infer_pw-s.csv
 # Optional override for k values (comma separated).
-# k_values: "5,10,20,50,100"
+k_values: "5,10,20,50,100"
 # Softmax temperature override.
 knn_softmax_temp: 0.07
 # Embedding batch size.

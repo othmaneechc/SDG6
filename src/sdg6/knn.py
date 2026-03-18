@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
 
@@ -98,7 +99,7 @@ def _knn_softmax_vote_with_probs(
 def evaluate_knn(
     train_features: np.ndarray,
     train_labels: np.ndarray,
-    eval_sets: Dict[str, Tuple[np.ndarray, np.ndarray]],
+    eval_sets: Dict[str, Tuple[np.ndarray, np.ndarray] | Tuple[np.ndarray, np.ndarray, list[str]]],
     *,
     class_names: List[str],
     k_values: str | Iterable[int],
@@ -148,14 +149,20 @@ def evaluate_knn(
 
     results: list[dict] = []
     split_metrics_per_k: dict[int, dict[str, dict]] = {k: {} for k in k_list}
-    for split_name, (Xev, yev) in eval_sets.items():
+    for split_name, split_data in eval_sets.items():
+        if len(split_data) == 3:
+            Xev, yev, eval_paths = split_data
+        else:
+            Xev, yev = split_data
+            eval_paths = None
+
         if Xev.size == 0:
             for k in k_list:
                 split_metrics_per_k[k][split_name] = {"acc": float("nan")}
             continue
 
         Xev_t = _normalize(_as_torch(Xev, device))
-        preds_per_k = _knn_softmax_vote(
+        preds_with_probs_per_k = _knn_softmax_vote_with_probs(
             Xtr,
             ytr,
             Xev_t,
@@ -164,7 +171,7 @@ def evaluate_knn(
             temperature=softmax_temp,
         )
 
-        for k, preds in preds_per_k.items():
+        for k, (preds, max_probs) in preds_with_probs_per_k.items():
             acc = float(np.mean(preds == yev))
             split_metrics_per_k[k][split_name] = {"acc": acc}
 
@@ -186,6 +193,32 @@ def evaluate_knn(
                     f.write("\nClassification report:\n")
                     f.write(report)
                     f.write("\n")
+
+                if eval_paths is not None:
+                    pred_csv_path = confusion_dir / f"{split_name}_predictions_k{k}.csv"
+                    with pred_csv_path.open("w", newline="") as f:
+                        writer = csv.writer(f)
+                        writer.writerow(
+                            [
+                                "path",
+                                "true_label_idx",
+                                "true_label",
+                                "pred_label_idx",
+                                "pred_label",
+                                "confidence",
+                            ]
+                        )
+                        for path, true_idx, pred_idx, confidence in zip(eval_paths, yev, preds, max_probs):
+                            writer.writerow(
+                                [
+                                    path,
+                                    int(true_idx),
+                                    class_names[int(true_idx)],
+                                    int(pred_idx),
+                                    class_names[int(pred_idx)],
+                                    float(confidence),
+                                ]
+                            )
 
     for k in k_list:
         results.append({"k": k, "splits": split_metrics_per_k[k]})

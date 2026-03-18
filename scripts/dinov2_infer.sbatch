@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=sdg6-dinov2-infer
 #SBATCH --partition=main
-#SBATCH --gres=gpu:8
+#SBATCH --gres=gpu:2
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --time=24:00:00

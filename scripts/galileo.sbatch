@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=galileo
-#SBATCH --partition=main
-#SBATCH --gres=gpu:a100l:2
+#SBATCH --partition=long
+#SBATCH --gres=gpu:4
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=48G
 #SBATCH --time=48:00:00
@@ -28,7 +28,7 @@ mkdir -p "${REPO}/log"
 echo "Starting galileo job at $(date) with CONFIG=${CONFIG}"
 
 # Determine number of GPUs per node
-GPUS_PER_NODE="${GPUS_PER_NODE:-2}"
+GPUS_PER_NODE="${GPUS_PER_NODE:-4}"
 MASTER_PORT="${MASTER_PORT:-29500}"
 
 if [[ "${GPUS_PER_NODE}" -gt 1 ]]; then
