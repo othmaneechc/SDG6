@@ -1,4 +1,9 @@
-"""Wrapper around the DINO ViT backbone (Caron et al. 2021) via the `dino` dependency."""
+"""DINO adapter.
+
+Sources:
+- Codebase: https://github.com/facebookresearch/dino
+- Paper: Caron et al., 2021, https://arxiv.org/abs/2104.14294
+"""
 
 from __future__ import annotations
 

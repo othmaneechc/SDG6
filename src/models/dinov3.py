@@ -1,4 +1,9 @@
-"""DINOv3 wrapper using Hugging Face checkpoints (Oquab et al. 2023)."""
+"""DINOv3 wrapper using Hugging Face checkpoints.
+
+Sources:
+- Codebase: https://github.com/facebookresearch/dinov3
+- Models: https://huggingface.co/facebook
+"""
 
 from __future__ import annotations
 

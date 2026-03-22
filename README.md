@@ -14,9 +14,23 @@ It provides a unified pipeline for:
 The core design is a model‑agnostic CLI and adapter layer, so you can switch encoders without touching the data/metric code.
 
 ## Repository layout
-- src/models: single‑file adapters (dino, dinov2, dinov3, galileo)
+- src/models: single‑file adapters (dino, dinov2, dinov3, prithvi, galileo)
 - src/sdg6: data loader, embedding extraction, k‑NN logic, CLI, inference
 - scripts: SLURM sbatch files and YAML configs
+
+## External Sources
+- DINO adapter: https://github.com/facebookresearch/dino (Caron et al., 2021, https://arxiv.org/abs/2104.14294)
+- DINOv2 adapter: https://github.com/facebookresearch/dinov2 (Oquab et al., 2023, https://arxiv.org/abs/2304.07193)
+- DINOv3 adapter: https://github.com/facebookresearch/dinov3 and HF model cards under https://huggingface.co/facebook
+- Prithvi adapter: TerraTorch registry (https://github.com/IBM/terratorch) + IBM/NASA Geospatial checkpoints (https://huggingface.co/ibm-nasa-geospatial)
+- Galileo adapter: adapted from https://github.com/nasaharvest/galileo
+
+## Data and Weights
+- Galileo model weights: hosted on Hugging Face (base model used here), e.g. https://huggingface.co/nasaharvest/galileo
+- DINO and DINOv2 weights: Zenodo, https://zenodo.org/records/19156085
+- Inference results: Zenodo, https://zenodo.org/records/19156085
+- Population density patches: Zenodo, https://zenodo.org/records/19156085
+- Afrobarometer imagery tiles: Zenodo, https://zenodo.org/records/14740420
 
 ## Environment
 Use uv to sync dependencies in this repo:
@@ -105,8 +119,3 @@ python -m sdg6.cli --model <name> ...
 ## Notes
 - The unified dataloader expects ImageFolder structure for classification: data_dir/train|val|test/<class_name>/*.tif
 - The k‑NN logic is aligned to DINOv2: cosine similarity + softmax voting (temperature configurable).
-
-## Acknowledgements
-- DINO (Caron et al. 2021) via the dino dependency
-- DINOv3 (Oquab et al. 2023) via Hugging Face
-- Galileo encoder adapted from nasaharvest/galileo (MIT)

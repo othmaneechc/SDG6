@@ -1,4 +1,9 @@
-"""DINOv2 adapter for locally trained checkpoints (Oquab et al. 2023)."""
+"""DINOv2 adapter for locally trained checkpoints.
+
+Sources:
+- Codebase: https://github.com/facebookresearch/dinov2
+- Paper: Oquab et al., 2023, https://arxiv.org/abs/2304.07193
+"""
 
 from __future__ import annotations
 

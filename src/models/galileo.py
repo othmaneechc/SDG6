@@ -1,3 +1,10 @@
+"""Galileo encoder adapter and utilities.
+
+Sources:
+- Adapted from: https://github.com/nasaharvest/galileo
+- Paper: "Learning Global and Local Features in Pretrained Remote Sensing Models"
+"""
+
 import collections.abc
 import itertools
 import json

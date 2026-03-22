@@ -1,4 +1,9 @@
-"""Prithvi wrapper using Terratorch backbones."""
+"""Prithvi wrapper using Terratorch backbones.
+
+Sources:
+- TerraTorch backbone registry: https://github.com/IBM/terratorch
+- Prithvi checkpoints: https://huggingface.co/ibm-nasa-geospatial
+"""
 
 from __future__ import annotations
 
