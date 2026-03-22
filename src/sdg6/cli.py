@@ -107,6 +107,14 @@ def build_parser() -> argparse.ArgumentParser:
     dv3 = parser.add_argument_group("dinov3")
     dv3.add_argument("--dinov3-weights-type", type=str, choices=["auto", "lvd", "sat"], default="auto")
 
+    # Prithvi-only knobs
+    pr = parser.add_argument_group("prithvi")
+    pr.add_argument("--prithvi-img-size", type=int, default=224, help="Resize + center crop size.")
+    pr.add_argument("--prithvi-band-indices", type=str, default=None, help="Comma-separated channel indices to select.")
+    pr.add_argument("--prithvi-nodata-value", type=float, default=-9999.0, help="NoData sentinel value.")
+    pr.add_argument("--prithvi-fill-value", type=float, default=1e-4, help="Fill value used for invalid/missing bands.")
+    pr.add_argument("--prithvi-value-scale", type=float, default=1.0, help="Scale applied to transformed pixels.")
+
     # DINOv2-only knobs
     dv2 = parser.add_argument_group("dinov2")
     dv2.add_argument("--dinov2-config", type=Path, default=None, help="Path to DINOv2 config YAML.")
@@ -176,6 +184,8 @@ def main() -> None:
         parser.error("Provide --model or set 'model' in the config file.")
     if not args.weights:
         parser.error("Provide --weights or set 'weights' in the config file.")
+    if args.model not in available_models():
+        parser.error(f"Unsupported model '{args.model}'. Available models: {', '.join(available_models())}")
 
     # Normalize paths in case they came from config defaults.
     if args.data_root and not isinstance(args.data_root, Path):
@@ -229,13 +239,24 @@ def main() -> None:
                     )
                 elif args.model == "dinov3":
                     print(f"[rank {rank}] DINOv3 weights : {weights}  type: {args.dinov3_weights_type}")
-                else:
+                elif args.model == "prithvi":
+                    print(
+                        f"[rank {rank}] Prithvi params : "
+                        f"indices={_parse_int_list(args.prithvi_band_indices) or 'auto'} "
+                        f"img_size={args.prithvi_img_size} "
+                        f"nodata={args.prithvi_nodata_value} "
+                        f"fill={args.prithvi_fill_value} "
+                        f"scale={args.prithvi_value_scale}"
+                    )
+                elif args.model == "galileo":
                     print(
                         f"[rank {rank}] Galileo bands  : "
                         f"indices={args.galileo_band_indices or 'all'} "
                         f"names={args.galileo_band_names or 'infer'} "
                         f"norm={args.galileo_normalize} ndvi={args.galileo_compute_ndvi}"
                     )
+                else:
+                    raise RuntimeError(f"Unsupported model '{args.model}'")
                 print("------------------------------------------------------------")
 
             if args.model == "dino":
@@ -273,7 +294,19 @@ def main() -> None:
                     dtype=dtype,
                     weights_type=args.dinov3_weights_type,
                 )
-            else:
+            elif args.model == "prithvi":
+                adapter = load_model(
+                    "prithvi",
+                    weights=weights,
+                    device=device,
+                    dtype=dtype,
+                    img_size=args.prithvi_img_size,
+                    band_indices=_parse_int_list(args.prithvi_band_indices),
+                    nodata_value=args.prithvi_nodata_value,
+                    fill_value=args.prithvi_fill_value,
+                    value_scale=args.prithvi_value_scale,
+                )
+            elif args.model == "galileo":
                 adapter = load_model(
                     "galileo",
                     weights_dir=weights,
@@ -291,6 +324,8 @@ def main() -> None:
                     pad_square=not args.galileo_no_pad_square,
                     pad_to_patch_flag=not args.galileo_no_pad_to_patch,
                 )
+            else:
+                raise RuntimeError(f"Unsupported model '{args.model}'")
 
             loaders, class_names = data.build_dataloaders(
                 data_root,

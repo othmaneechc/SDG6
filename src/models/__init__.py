@@ -19,12 +19,14 @@ def _builders():
     from models.dinov2 import load_model as load_dinov2
     from models.dinov3 import load_model as load_dinov3
     from models.galileo import load_model as load_galileo
+    from models.prithvi import load_model as load_prithvi
 
     return {
         "dino": load_dino,
         "dinov2": load_dinov2,
         "dinov3": load_dinov3,
         "galileo": load_galileo,
+        "prithvi": load_prithvi,
     }
 
 

@@ -1,15 +1,16 @@
-# Required: which model wrapper to load (dino).
-model: dino
-# Required: root dataset folder containing train/val/test splits.
+# Required: which model wrapper to load (prithvi).
+model: prithvi
+# Required: list of Terratorch backbone names (or HF IDs that map to them).
+weights:
+  - prithvi_eo_v2_600
+# Required: root containing dataset folders (each with train/val/test).
 data_root: /home/mila/e/echchabo/scratch/SDG6-Tracker
-# Required: path to DINO checkpoint (.pth).
-weights: /home/mila/e/echchabo/scratch/SDG6-Tracker-models/dino/checkpoint.pth
 # Where to write results (hparams, confusion, embeddings if saved).
 output_root: /home/mila/e/echchabo/scratch/SDG6-Tracker-runs
 # List of dataset names under data_root to evaluate.
 datasets: [PW-s, SW-s]
 # Comma list of k values for k-NN.
-k_values: "5,10,20,50,100"
+k_values: "5,10,20,50,100,200"
 # Distance metric for k-NN (cosine or l2).
 knn_metric: cosine
 # DINOv2-aligned voting weights (softmax only).
@@ -17,14 +18,16 @@ knn_weights: softmax
 # Softmax temperature for k-NN voting.
 knn_softmax_temp: 0.07
 # Embedding batch size.
-batch_size: 64
+batch_size: 32
 # Dataloader workers.
 num_workers: 4
-# DINO backbone (vit_small|vit_base|resnet50...).
-dino_arch: vit_base
-# Patch size for ViT variants.
-dino_patch_size: 8
-# State dict key to load (usually teacher or student).
-dino_checkpoint_key: teacher
 # Write embeddings to disk (npz) if true.
 save_embeddings: false
+
+# Prithvi-specific defaults (used by prithvi adapter implementations).
+# RGB inputs only -> select channels 0,1,2.
+prithvi_band_indices: [0, 1, 2]
+prithvi_img_size: 224
+prithvi_nodata_value: -9999.0
+prithvi_fill_value: 0.0001
+prithvi_value_scale: 1.0

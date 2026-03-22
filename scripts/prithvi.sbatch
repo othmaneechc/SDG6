@@ -1,17 +1,17 @@
 #!/bin/bash
-#SBATCH --job-name=sdg6-dino-knn
-#SBATCH --partition=long
+#SBATCH --job-name=sdg6-prithvi-knn
+#SBATCH --partition=main
 #SBATCH --gres=gpu:2
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=48G
-#SBATCH --time=24:00:00
+#SBATCH --time=48:00:00
 #SBATCH --output=log/%x-%j.out
 #SBATCH --error=log/%x-%j.err
 
 set -euo pipefail
 
 REPO="${REPO:-${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}}"
-CONFIG="${CONFIG:-${REPO}/scripts/configs/dino.yaml}"
+CONFIG="${CONFIG:-${REPO}/scripts/configs/prithvi.yaml}"
 
 export PYTHONPATH="${REPO}/src:${PYTHONPATH:-}"
 export PYTHONUNBUFFERED=1
@@ -25,10 +25,12 @@ fi
 
 cd "${REPO}"
 mkdir -p "${REPO}/log"
-echo "Starting dino job at $(date) with CONFIG=${CONFIG}"
+echo "Starting prithvi job at $(date) with CONFIG=${CONFIG}"
+
 GPUS_PER_NODE="${GPUS_PER_NODE:-2}"
 MASTER_PORT="${MASTER_PORT:-29500}"
 if [[ "${GPUS_PER_NODE}" -gt 1 ]]; then
+  echo "Launching torchrun with ${GPUS_PER_NODE} processes"
   torchrun --nproc_per_node="${GPUS_PER_NODE}" --master_port="${MASTER_PORT}" -m sdg6.cli --config "${CONFIG}" "$@"
 else
   python3 -m sdg6.cli --config "${CONFIG}" "$@"

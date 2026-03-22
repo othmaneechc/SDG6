@@ -19,6 +19,39 @@ IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
+def _load_dino_checkpoint(
+    model: torch.nn.Module,
+    *,
+    weights: str | Path,
+    checkpoint_key: str | None,
+) -> None:
+    """Load local DINO checkpoint with PyTorch>=2.6-compatible torch.load semantics."""
+    weight_path = Path(str(weights)).expanduser()
+    if not weight_path.is_file():
+        raise FileNotFoundError(f"DINO checkpoint not found: {weight_path}")
+
+    try:
+        # Explicitly disable `weights_only` for trusted local checkpoints.
+        state_dict = torch.load(str(weight_path), map_location="cpu", weights_only=False)
+    except TypeError:
+        # Older torch versions do not expose weights_only.
+        state_dict = torch.load(str(weight_path), map_location="cpu")
+
+    if checkpoint_key is not None and isinstance(state_dict, dict) and checkpoint_key in state_dict:
+        print(f"Take key {checkpoint_key} in provided checkpoint dict")
+        state_dict = state_dict[checkpoint_key]
+
+    if not isinstance(state_dict, dict):
+        raise ValueError(f"Unexpected checkpoint format in {weight_path}: expected a state_dict-like dict.")
+
+    # remove `module.` prefix
+    state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
+    # remove `backbone.` prefix induced by multicrop wrapper
+    state_dict = {k.replace("backbone.", ""): v for k, v in state_dict.items()}
+    msg = model.load_state_dict(state_dict, strict=False)
+    print(f"Pretrained weights found at {weight_path} and loaded with msg: {msg}")
+
+
 def build_transform(resize_size: int = 256, crop_size: int = 224) -> T.Compose:
     return T.Compose(
         [
@@ -54,13 +87,21 @@ def load_model(
     if arch not in vits.__dict__:
         raise ValueError(f"Unknown DINO architecture '{arch}'")
     model = vits.__dict__[arch](patch_size=patch_size, num_classes=0)
-    dino_utils.load_pretrained_weights(
-        model,
-        str(weights),
-        checkpoint_key=checkpoint_key,
-        model_name=arch,
-        patch_size=patch_size,
-    )
+    weight_path = Path(str(weights)).expanduser()
+    if weight_path.is_file():
+        _load_dino_checkpoint(
+            model,
+            weights=weight_path,
+            checkpoint_key=checkpoint_key,
+        )
+    else:
+        dino_utils.load_pretrained_weights(
+            model,
+            str(weights),
+            checkpoint_key=checkpoint_key,
+            model_name=arch,
+            patch_size=patch_size,
+        )
     model.to(device).eval()
 
     output_dim = int(getattr(model, "embed_dim", getattr(model, "num_features", 0)))
