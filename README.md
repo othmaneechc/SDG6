@@ -1,9 +1,8 @@
-# SDG6 Tracker – Tracking Progress Towards SDG 6 Using Satellite Imagery
+# SDG6 Tracker
 
 This repository contains the code for the paper:
 
-Tracking Progress Towards Sustainable Development Goal 6 Using Satellite Imagery
-https://arxiv.org/abs/2411.19093
+Monitoring access to piped water and sanitation infrastructure in Africa at disaggregated scales using satellite imagery and self-supervised learning https://arxiv.org/abs/2411.19093
 
 It provides a unified pipeline for:
 - pretraining DINO/DINOv2 backbones
@@ -58,7 +57,7 @@ Key fields:
 bash scripts/dinov2_pt.sbatch
 ```
 
-## k‑NN evaluation / classification
+## k‑NN evaluation/classification
 Evaluation uses the unified CLI and the DINOv2‑aligned k‑NN logic (cosine similarity + softmax voting).
 
 1) Configure the eval:
