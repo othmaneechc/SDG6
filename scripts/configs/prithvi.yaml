@@ -2,7 +2,7 @@
 model: prithvi
 # Required: list of Terratorch backbone names (or HF IDs that map to them).
 weights:
-  - prithvi_eo_v2_600
+  - prithvi_eo_v2_300
 # Required: root containing dataset folders (each with train/val/test).
 data_root: /home/mila/e/echchabo/scratch/SDG6-Tracker
 # Where to write results (hparams, confusion, embeddings if saved).
