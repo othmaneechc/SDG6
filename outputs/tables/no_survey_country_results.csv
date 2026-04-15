@@ -1,0 +1,76 @@
+service,group,Country,Prediction (%),JMP (%),Abs Error (pp),Total Population
+Piped Water,No-survey countries,Mayotte,43.78,92.67,48.89,273156
+Piped Water,No-survey countries,Djibouti,38.42,83.36,44.94,327220
+Piped Water,No-survey countries,Comoros,25.06,59.5,34.44,882997
+Piped Water,No-survey countries,Eritrea,21.73,51.76,30.029999999999998,3361424
+Piped Water,No-survey countries,Guinea-Bissau,21.18,47.81,26.630000000000003,1967849
+Piped Water,No-survey countries,Rwanda,20.31,45.49,25.180000000000003,12129495
+Piped Water,No-survey countries,Algeria,90.54,71.39,19.150000000000006,42004904
+Piped Water,No-survey countries,Burundi,20.13,38.67,18.540000000000003,11404307
+Piped Water,No-survey countries,Libya,92.46,77.96,14.5,5659106
+Piped Water,No-survey countries,Chad,25.17,16.79,8.380000000000003,16796511
+Piped Water,No-survey countries,Egypt,97.82,98.69,0.8700000000000045,98903619
+Piped Water,Survey countries,Namibia,49.04,83.7,34.660000000000004,2711682
+Piped Water,Survey countries,Botswana,59.85,91.19,31.339999999999996,2345550
+Piped Water,Survey countries,Ethiopia,16.09,44.07,27.98,114806861
+Piped Water,Survey countries,Mozambique,19.46,41.66,22.199999999999996,31066767
+Piped Water,Survey countries,Mali,33.01,52.63,19.620000000000005,20346682
+Piped Water,Survey countries,Niger,22.95,41.18,18.23,24559015
+Piped Water,Survey countries,eSwatini,43.94,61.86,17.92,1210488
+Piped Water,Survey countries,Liberia,23.03,5.5,17.53,4844172
+Piped Water,Survey countries,Nigeria,28.8,12.38,16.42,204880952
+Piped Water,Survey countries,Sao Tome and Principe,81.69,96.82,15.129999999999995,211017
+Piped Water,Survey countries,Gambia,64.18,79.17,14.989999999999995,2510350
+Piped Water,Survey countries,Madagascar,23.64,36.19,12.549999999999997,22440472
+Piped Water,Survey countries,Tanzania,28.69,41.12,12.429999999999996,56341225
+Piped Water,Survey countries,Mauritania,49.4,61.27,11.870000000000005,4812392
+Piped Water,Survey countries,Senegal,65.84,77.34,11.5,16310294
+Piped Water,Survey countries,Mauritius,87.74,99.0,11.260000000000005,1291353
+Piped Water,Survey countries,Cameroon,52.44,41.8,10.64,26336535
+Piped Water,Survey countries,Gabon,78.06,88.44,10.379999999999995,2237701
+Piped Water,Survey countries,Benin,29.38,38.75,9.370000000000001,11616626
+Piped Water,Survey countries,South Africa,81.43,90.45,9.019999999999996,49128451
+Piped Water,Survey countries,Cabo Verde,82.5,89.98,7.480000000000004,555978
+Piped Water,Survey countries,Togo,37.75,30.38,7.370000000000001,8803233
+Piped Water,Survey countries,Zambia,27.46,34.4,6.939999999999998,18708990
+Piped Water,Survey countries,Seychelles,86.9,93.58,6.679999999999993,96468
+Piped Water,Survey countries,Guinea,29.55,22.89,6.66,13019190
+Piped Water,Survey countries,Congo,49.01,55.47,6.460000000000001,3921965
+Piped Water,Survey countries,Ghana,62.99,56.67,6.32,30468871
+Piped Water,Survey countries,Zimbabwe,32.99,26.93,6.060000000000002,14612294
+Piped Water,Survey countries,Lesotho,67.08,72.27,5.189999999999998,1872826
+Piped Water,Survey countries,Burkina Faso,26.92,31.72,4.799999999999997,21074713
+Piped Water,Survey countries,Malawi,16.61,20.6,3.990000000000002,18872333
+Piped Water,Survey countries,Angola,46.53,43.09,3.4399999999999977,32587806
+Piped Water,Survey countries,Côte d'Ivoire,51.84,48.69,3.1500000000000057,26562510
+Piped Water,Survey countries,Uganda,20.41,23.4,2.9899999999999984,46735175
+Piped Water,Survey countries,Sierra Leone,17.99,20.68,2.6900000000000013,6590883
+Piped Water,Survey countries,Kenya,34.37,33.18,1.1899999999999977,52912464
+Piped Water,Survey countries,Tunisia,93.82,93.25,0.5699999999999932,9735854
+Sewage System Access,No-survey countries,Djibouti,4.11,39.60120548,35.49120548,327220
+Sewage System Access,No-survey countries,Libya,56.78,23.83053967,32.94946033,5659106
+Sewage System Access,No-survey countries,Guinea-Bissau,0.56,15.44357478,14.88357478,1967849
+Sewage System Access,No-survey countries,Egypt,57.02,67.1721882,10.15218819999999,98903619
+Sewage System Access,No-survey countries,Algeria,52.98,62.41009961,9.430099610000006,42004904
+Sewage System Access,No-survey countries,Chad,2.43,10.91219476,8.48219476,16796511
+Sewage System Access,Survey countries,Lesotho,1.05,47.51624599,46.466245990000004,1872826
+Sewage System Access,Survey countries,Malawi,1.52,46.19080996,44.67080996,18872333
+Sewage System Access,Survey countries,Tunisia,54.1,81.12929504,27.02929504,9735854
+Sewage System Access,Survey countries,Gambia,3.65,27.98605759,24.336057590000003,2510350
+Sewage System Access,Survey countries,Tanzania,3.07,25.1147946,22.0447946,56341225
+Sewage System Access,Survey countries,Kenya,11.65,31.49890373,19.848903729999996,52912464
+Sewage System Access,Survey countries,Sao Tome and Principe,19.44,34.00348868,14.563488679999995,211017
+Sewage System Access,Survey countries,South Africa,59.62,71.70770386,12.087703859999998,49128451
+Sewage System Access,Survey countries,Nigeria,20.56,31.97157249,11.411572490000001,204880952
+Sewage System Access,Survey countries,Mali,5.96,15.91964268,9.959642680000002,20346682
+Sewage System Access,Survey countries,Uganda,8.22,17.79607757,9.57607757,46735175
+Sewage System Access,Survey countries,Ghana,22.89,15.83410191,7.055898090000001,30468871
+Sewage System Access,Survey countries,Niger,1.67,8.116053123,6.446053123,24559015
+Sewage System Access,Survey countries,Madagascar,6.91,12.32750829,5.417508290000001,22440472
+Sewage System Access,Survey countries,Benin,7.92,2.701275734,5.218724266,11616626
+Sewage System Access,Survey countries,Sierra Leone,11.1,15.38745213,4.28745213,6590883
+Sewage System Access,Survey countries,Burkina Faso,5.86,9.746474066,3.886474065999999,21074713
+Sewage System Access,Survey countries,Zimbabwe,29.0,31.80642949,2.8064294899999993,14612294
+Sewage System Access,Survey countries,Ethiopia,6.08,7.219801714,1.1398017139999999,114806861
+Sewage System Access,Survey countries,Togo,5.29,5.756073739,0.4660737389999996,8803233
+Sewage System Access,Survey countries,Senegal,14.17,14.06160219,0.1083978099999996,16310294

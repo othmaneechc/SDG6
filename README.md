@@ -15,7 +15,11 @@ The core design is a model‑agnostic CLI and adapter layer, so you can switch e
 ## Repository layout
 - src/models: single‑file adapters (dino, dinov2, dinov3, prithvi, galileo)
 - src/sdg6: data loader, embedding extraction, k‑NN logic, CLI, inference
-- scripts: SLURM sbatch files and YAML configs
+- scripts/configs: YAML configs for train/eval/inference
+- scripts/slurm: SLURM launchers
+- scripts/training: Python wrappers for pretraining
+- scripts/analysis: Python analysis workflows (including converted notebooks)
+- outputs: generated artifacts (`figures/`, `tables/`, `reports/`)
 
 ## External Sources
 - DINO adapter: https://github.com/facebookresearch/dino (Caron et al., 2021, https://arxiv.org/abs/2104.14294)
@@ -54,7 +58,7 @@ Key fields:
 2) Launch pretraining:
 
 ```bash
-bash scripts/dinov2_pt.sbatch
+sbatch scripts/slurm/dinov2_pt.sbatch
 ```
 
 ## k‑NN evaluation/classification
@@ -73,7 +77,7 @@ Key fields:
 2) Run k‑NN evaluation:
 
 ```bash
-bash scripts/dinov2.sbatch
+sbatch scripts/slurm/dinov2.sbatch
 ```
 
 Outputs:
@@ -97,7 +101,7 @@ Key fields:
 2) Run inference on many countries:
 
 ```bash
-bash scripts/dinov2_infer.sbatch
+sbatch scripts/slurm/dinov2_infer.sbatch
 ```
 
 This sbatch loops over data/countries and writes SW/PW predictions under data/inference/<country>.

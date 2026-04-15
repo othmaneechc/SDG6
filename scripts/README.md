@@ -1,21 +1,55 @@
-# Batch jobs (YAML-driven)
+# Scripts Layout
 
-All k-NN jobs now read hyperparameters from `scripts/configs/*.yaml` and simply run the unified CLI (`python -m sdg6.cli --config <file>`). `PYTHONPATH` is set relative to the script; logs go to `log/%x-%j.*`.
+This directory is organized for camera-ready use with portable paths.
 
-- `scripts/dino.sbatch` — k-NN for DINO checkpoints (config: `scripts/configs/dino.yaml`).
-- `scripts/dinov2.sbatch` — k-NN for DINOv2 checkpoints (config: `scripts/configs/dinov2.yaml`).
-- `scripts/dinov2_infer.sbatch` — DINOv2 k-NN inference on arbitrary images (config: `scripts/configs/dinov2_infer.yaml`).
-- `scripts/dinov3.sbatch` — k-NN for Hugging Face DINOv3 (config: `scripts/configs/dinov3.yaml`).
-- `scripts/prithvi.sbatch` — k-NN for Prithvi checkpoints (config: `scripts/configs/prithvi.yaml`).
-- `scripts/galileo.sbatch` — k-NN for local Galileo encoder weights (config: `scripts/configs/galileo.yaml`).
-- `scripts/dino_pt.sbatch` — DINO pretraining/fine-tuning via `dino.main_dino` (config: `scripts/configs/dino_pt.yaml`).
-- `scripts/dinov2_pt.sbatch` — DINOv2 pretraining via local repo + uv (config: `scripts/configs/dinov2_pt.yaml`).
- - `scripts/gee_export_tiles.sbatch` — batch Sentinel downloads per-country from tiles CSVs (config: `scripts/configs/gee_export_tiles.yaml`).
+- `scripts/slurm/`:
+  SLURM launchers for training, evaluation, inference, and GEE export.
+- `scripts/configs/`:
+  YAML configs consumed by `sdg6.cli`, `sdg6.infer_knn`, and training wrappers.
+- `scripts/training/`:
+  Python wrappers for DINO and DINOv2 pretraining.
+- `scripts/analysis/`:
+  Plotting/statistics scripts (including converted notebook workflows).
 
+## SLURM launchers
 
-GEE image export:
-- `python -m gee_export.cli --config scripts/configs/gee_export.yaml` — downloads tiles with the UM6P service account key. Override fields on the CLI to switch datasets or coordinate files.
-- `python -m gee_export.batch_tiles --config scripts/configs/gee_export_tiles.yaml` — builds centroids from per-country `*_tiles.csv` and downloads 256×256 Sentinel tiles into country subfolders.
-- `python scripts/plot_nigeria_access_hotspots.py` — builds one side-by-side Nigeria figure (PW + SW panels) with a shared horizontal colorbar, no axes frame, ADM2/LGA boundaries by default (`data/admin_boundaries/gadm41_NGA_2.json`), and a green satellite-like texture backdrop.
+- `scripts/slurm/dino.sbatch` — k-NN for DINO checkpoints (`scripts/configs/dino.yaml`)
+- `scripts/slurm/dinov2.sbatch` — k-NN for DINOv2 checkpoints (`scripts/configs/dinov2.yaml`)
+- `scripts/slurm/dinov3.sbatch` — k-NN for DINOv3 checkpoints (`scripts/configs/dinov3.yaml`)
+- `scripts/slurm/prithvi.sbatch` — k-NN for Prithvi checkpoints (`scripts/configs/prithvi.yaml`)
+- `scripts/slurm/galileo.sbatch` — k-NN for Galileo checkpoints (`scripts/configs/galileo.yaml`)
+- `scripts/slurm/dino_pt.sbatch` — DINO pretraining (`scripts/configs/dino_pt.yaml`)
+- `scripts/slurm/dinov2_pt.sbatch` — DINOv2 pretraining (`scripts/configs/dinov2_pt.yaml`)
+- `scripts/slurm/dinov2_infer.sbatch` — batched country inference (`scripts/configs/dinov2_infer.yaml`)
+- `scripts/slurm/gee_export_tiles.sbatch` — Sentinel tile export (`scripts/configs/gee_export_tiles.yaml`)
 
-Override the config with `CONFIG=/path/to/your.yaml sbatch scripts/galileo.sbatch` or append extra CLI flags after `--`, e.g. `sbatch scripts/dinov3.sbatch -- --device cuda:1`.
+Examples:
+
+```bash
+sbatch scripts/slurm/dinov2.sbatch
+CONFIG=scripts/configs/galileo.yaml sbatch scripts/slurm/galileo.sbatch
+sbatch scripts/slurm/dinov3.sbatch -- --device cuda:1
+```
+
+## Analysis scripts
+
+- `python scripts/analysis/plot_nigeria_access_hotspots.py`
+- `python scripts/analysis/plot_no_survey_population_cdf.py`
+- `python scripts/analysis/compute_dino_family_auroc.py`
+- `python scripts/analysis/figures.py`
+- `python scripts/analysis/stats.py`
+- `python scripts/analysis/urban_rural_split_analysis.py`
+- `python scripts/analysis/count_unique_countries.py`
+
+## Portable path defaults
+
+Analysis scripts default to repo-relative paths and can be overridden with:
+
+- `SDG6_DATA_ROOT` (defaults to `data/`)
+- `SDG6_RUNS_ROOT` (defaults to `runs/`)
+
+Generated artifacts are written under `outputs/`:
+
+- `outputs/figures/`
+- `outputs/tables/`
+- `outputs/reports/`

@@ -1,15 +1,15 @@
 # Required: which model wrapper to load (dinov2).
 model: dinov2
 # Required: dataset folder containing train/val/test splits.
-data_dir: /home/mila/e/echchabo/scratch/SDG6-Tracker/SW-s
+data_dir: data/SW-s
 # Required: path to DINOv2 teacher checkpoint (.pth).
-weights: /home/mila/e/echchabo/scratch/SDG6-Tracker-models/dinov2/teacher_checkpoint.pth
+weights: runs/pretrained/dinov2/teacher_checkpoint.pth
 # Required: DINOv2 config yaml used for training or generated config.yaml.
 dinov2_config: scripts/configs/sat_vit.yaml
 # DINOv2 checkpoint key (teacher|student|None).
 dinov2_checkpoint_key: teacher
 # Where to write results (hparams, confusion, embeddings if saved).
-output_root: /home/mila/e/echchabo/scratch/SDG6-Tracker-runs/dinov2-knn
+output_root: runs/dinov2-knn
 # Comma list of k values for k-NN.
 k_values: "5,10,20,50,100,200"
 # Distance metric for k-NN (cosine or l2).
@@ -19,7 +19,7 @@ knn_weights: softmax
 # Softmax temperature for k-NN voting.
 knn_softmax_temp: 0.07
 # Optional: path to save the k-NN classifier artifact.
-knn_classifier_path: /home/mila/e/echchabo/scratch/SDG6-Tracker-runs/dinov2-knn/knn_classifier_sw-s.npz
+knn_classifier_path: runs/dinov2-knn/knn_classifier_sw-s.npz
 # Embedding batch size.
 batch_size: 128
 # Dataloader workers.

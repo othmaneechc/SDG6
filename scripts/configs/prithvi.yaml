@@ -4,9 +4,9 @@ model: prithvi
 weights:
   - prithvi_eo_v2_300
 # Required: root containing dataset folders (each with train/val/test).
-data_root: /home/mila/e/echchabo/scratch/SDG6-Tracker
+data_root: data
 # Where to write results (hparams, confusion, embeddings if saved).
-output_root: /home/mila/e/echchabo/scratch/SDG6-Tracker-runs
+output_root: runs/prithvi-knn
 # List of dataset names under data_root to evaluate.
 datasets: [PW-s, SW-s]
 # Comma list of k values for k-NN.

@@ -1,11 +1,11 @@
 # Required: which model wrapper to load (dino).
 model: dino
 # Required: root dataset folder containing train/val/test splits.
-data_root: /home/mila/e/echchabo/scratch/SDG6-Tracker
+data_root: data
 # Required: path to DINO checkpoint (.pth).
-weights: /home/mila/e/echchabo/scratch/SDG6-Tracker-models/dino/checkpoint.pth
+weights: runs/pretrained/dino/checkpoint.pth
 # Where to write results (hparams, confusion, embeddings if saved).
-output_root: /home/mila/e/echchabo/scratch/SDG6-Tracker-runs
+output_root: runs/dino-knn
 # List of dataset names under data_root to evaluate.
 datasets: [PW-s, SW-s]
 # Comma list of k values for k-NN.

@@ -1,11 +1,11 @@
 # Required: which model wrapper to load (galileo|dino|dinov3).
 model: galileo
 # Required: path to folder containing config.json and encoder.pt.
-weights: /home/mila/e/echchabo/scratch/SDG6-Tracker-models/base
+weights: runs/pretrained/galileo/base
 # Required: root containing dataset folders (each with train/val/test).
-data_root: /home/mila/e/echchabo/scratch/SDG6-Tracker
+data_root: data
 # Where to write results (hparams, confusion, embeddings if saved).
-output_root: runs
+output_root: runs/galileo-knn
 # List of dataset names under data_root to evaluate.
 datasets: [SW-s, PW-s]
 # Comma list of k values for k-NN.
