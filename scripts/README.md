@@ -16,5 +16,6 @@ All k-NN jobs now read hyperparameters from `scripts/configs/*.yaml` and simply 
 GEE image export:
 - `python -m gee_export.cli --config scripts/configs/gee_export.yaml` — downloads tiles with the UM6P service account key. Override fields on the CLI to switch datasets or coordinate files.
 - `python -m gee_export.batch_tiles --config scripts/configs/gee_export_tiles.yaml` — builds centroids from per-country `*_tiles.csv` and downloads 256×256 Sentinel tiles into country subfolders.
+- `python scripts/plot_nigeria_access_hotspots.py` — builds one side-by-side Nigeria figure (PW + SW panels) with a shared horizontal colorbar, no axes frame, ADM2/LGA boundaries by default (`data/admin_boundaries/gadm41_NGA_2.json`), and a green satellite-like texture backdrop.
 
 Override the config with `CONFIG=/path/to/your.yaml sbatch scripts/galileo.sbatch` or append extra CLI flags after `--`, e.g. `sbatch scripts/dinov3.sbatch -- --device cuda:1`.
