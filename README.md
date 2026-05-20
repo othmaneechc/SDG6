@@ -2,7 +2,8 @@
 
 This repository contains the code for the paper:
 
-Monitoring access to piped water and sanitation infrastructure in Africa at disaggregated scales using satellite imagery and self-supervised learning https://arxiv.org/abs/2411.19093
+Seeing SDG 6 from space: local-scale monitoring of piped water and sewage system access across Africa using satellite imagery and self-supervised learning
+https://arxiv.org/abs/2411.19093
 
 It provides a unified pipeline for:
 - pretraining DINO/DINOv2 backbones
