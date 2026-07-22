@@ -32,3 +32,6 @@ data/SW-*/
 
 # checkpoints
 src/dino_/*.pth
+
+# derived manifest (35MB, rebuild with scripts/build_manifest.py)
+data/manifest_*.csv

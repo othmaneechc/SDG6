@@ -86,7 +86,7 @@ def load_model(
     resize_size: int = 256,
     crop_size: int = 224,
 ) -> ModelAdapter:
-    device = resolve_device(str(device)) if isinstance(device, str) or device is None else device
+    device = resolve_device(device) if isinstance(device, str) or device is None else device
     dtype = dtype if isinstance(dtype, torch.dtype) else resolve_dtype(str(dtype), device)
 
     if arch not in vits.__dict__:
