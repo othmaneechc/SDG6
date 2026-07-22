@@ -30,9 +30,14 @@ fail=0
 
 mkdir -p "$RAW" "$ROOT/runs/pretrained" "$ROOT/data"
 
-# unzip <archive> <parent-dir> [extra unzip flags]
+# Which imagery modality to extract. Sentinel alone is 188,876 files against
+# 137,778 for landsat; on a filesystem with a per-user inode quota the landsat
+# half is dead weight unless the landsat datasets are actually being built.
+MODALITY="${SDG6_MODALITY:-sentinel}"
+
+# unzip <archive> <parent-dir> [extra unzip flags] [include-glob]
 extract() {
-  local zip="$1" parent="$2" mode="${3:--o}"
+  local zip="$1" parent="$2" mode="${3:--o}" include="${4:-}"
   if [ ! -s "$zip" ]; then
     log "MISSING $zip — skipping"
     fail=1
@@ -40,9 +45,14 @@ extract() {
   fi
   local top
   top=$(unzip -Z1 "$zip" | head -1 | cut -d/ -f1)
-  log "UNZIP $(basename "$zip") -> $parent/  (top-level: $top)"
+  log "UNZIP $(basename "$zip") -> $parent/  (top-level: $top, filter: ${include:-ALL})"
   mkdir -p "$parent"
-  if unzip -q "$mode" "$zip" -x "__MACOSX/*" -d "$parent"; then
+  if [ -n "$include" ]; then
+    unzip -q "$mode" "$zip" "$include" -x "__MACOSX/*" -d "$parent"
+  else
+    unzip -q "$mode" "$zip" -x "__MACOSX/*" -d "$parent"
+  fi
+  if [ $? -eq 0 ]; then
     log "  done: $(basename "$zip")"
   else
     log "  ERROR unzipping $(basename "$zip")"
@@ -50,13 +60,13 @@ extract() {
   fi
 }
 
-log "=== survey imagery (41 GB) -> $RAW"
+log "=== survey imagery -> $RAW (modality: $MODALITY)"
 # The three big rounds extract in parallel; they are independent.
-extract "$Z2/R7.zip" "$RAW" &
+extract "$Z2/R7.zip" "$RAW" "-o" "R7/$MODALITY/*" &
 p7=$!
-extract "$Z2/R8.zip" "$RAW" &
+extract "$Z2/R8.zip" "$RAW" "-o" "R8/$MODALITY/*" &
 p8=$!
-extract "$Z2/R9.zip" "$RAW" &
+extract "$Z2/R9.zip" "$RAW" "-o" "R9/$MODALITY/*" &
 p9=$!
 
 log "=== weights + auxiliary data (7 GB)"
