@@ -67,9 +67,25 @@ def _knn_softmax_vote_with_probs(
     k_values: List[int],
     temperature: float,
     chunk_size: int = 1024,
-) -> dict[int, tuple[np.ndarray, np.ndarray]]:
+) -> dict[int, tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    """k-NN softmax voting returning a PROPER probability distribution for every k.
+
+    The softmax must be normalized over exactly the k neighbours being voted on.
+    Normalizing once over max_k and then summing only the first k (the previous
+    behaviour) leaves the class scores summing to S_k < 1, where S_k varies per
+    sample -- so they are not probabilities and are not comparable across samples
+    unless k == max_k. Here the weights are renormalized per k via a prefix sum,
+    which costs one extra pass and makes every k correct.
+
+    Hard predictions are unaffected: the denominator is constant within a sample,
+    so argmax is identical. Only probabilities and anything derived from them
+    (AUROC, calibration, severity thresholds) change.
+
+    Returns per k: (preds, max_class_prob, full_class_probs).
+    """
     max_k = max(k_values)
     preds_per_k: dict[int, list[np.ndarray]] = {k: [] for k in k_values}
+    conf_per_k: dict[int, list[np.ndarray]] = {k: [] for k in k_values}
     probs_per_k: dict[int, list[np.ndarray]] = {k: [] for k in k_values}
 
     for start in range(0, eval_features.shape[0], chunk_size):
@@ -80,18 +96,32 @@ def _knn_softmax_vote_with_probs(
         topk_sims, indices = sims.topk(max_k, dim=1, largest=True, sorted=True)
         neighbor_labels = train_labels[indices]
 
-        weights = torch.softmax(topk_sims / temperature, dim=1)
-        weighted = torch.nn.functional.one_hot(neighbor_labels, num_classes=num_classes) * weights.unsqueeze(-1)
+        # Exponentiate once with the row max subtracted for numerical stability;
+        # the per-k denominator is then a prefix sum of the same exponentials.
+        exp_sims = torch.exp(
+            (topk_sims - topk_sims.max(dim=1, keepdim=True).values) / temperature
+        )
+        onehot = torch.nn.functional.one_hot(
+            neighbor_labels, num_classes=num_classes
+        ).to(exp_sims.dtype)
+        num_cum = torch.cumsum(exp_sims.unsqueeze(-1) * onehot, dim=1)
+        den_cum = torch.cumsum(exp_sims, dim=1).unsqueeze(-1)
+        tiny = torch.finfo(exp_sims.dtype).tiny
 
         for k in k_values:
-            probs = weighted[:, :k, :].sum(dim=1)
+            probs = num_cum[:, k - 1, :] / den_cum[:, k - 1, :].clamp_min(tiny)
             preds = probs.argmax(dim=1)
-            max_probs = probs.max(dim=1).values
+            conf = probs.max(dim=1).values
             preds_per_k[k].append(preds.cpu().numpy())
-            probs_per_k[k].append(max_probs.cpu().numpy())
+            conf_per_k[k].append(conf.cpu().numpy())
+            probs_per_k[k].append(probs.cpu().numpy())
 
     return {
-        k: (np.concatenate(preds_per_k[k], axis=0), np.concatenate(probs_per_k[k], axis=0))
+        k: (
+            np.concatenate(preds_per_k[k], axis=0),
+            np.concatenate(conf_per_k[k], axis=0),
+            np.concatenate(probs_per_k[k], axis=0),
+        )
         for k in k_values
     }
 
@@ -171,7 +201,7 @@ def evaluate_knn(
             temperature=softmax_temp,
         )
 
-        for k, (preds, max_probs) in preds_with_probs_per_k.items():
+        for k, (preds, max_probs, class_probs) in preds_with_probs_per_k.items():
             acc = float(np.mean(preds == yev))
             split_metrics_per_k[k][split_name] = {"acc": acc}
 
@@ -198,6 +228,10 @@ def evaluate_knn(
                     pred_csv_path = confusion_dir / f"{split_name}_predictions_k{k}.csv"
                     with pred_csv_path.open("w", newline="") as f:
                         writer = csv.writer(f)
+                        # prob_positive is P(class 1); with folder-sorted class
+                        # names this is the "has access" class. It is the score
+                        # AUROC/calibration should use -- `confidence` is only the
+                        # max-class value and is kept for backward compatibility.
                         writer.writerow(
                             [
                                 "path",
@@ -206,9 +240,17 @@ def evaluate_knn(
                                 "pred_label_idx",
                                 "pred_label",
                                 "confidence",
+                                "prob_positive",
                             ]
                         )
-                        for path, true_idx, pred_idx, confidence in zip(eval_paths, yev, preds, max_probs):
+                        pos_probs = (
+                            class_probs[:, 1]
+                            if class_probs.ndim == 2 and class_probs.shape[1] == 2
+                            else np.full(len(preds), np.nan)
+                        )
+                        for path, true_idx, pred_idx, confidence, p_pos in zip(
+                            eval_paths, yev, preds, max_probs, pos_probs
+                        ):
                             writer.writerow(
                                 [
                                     path,
@@ -217,6 +259,7 @@ def evaluate_knn(
                                     int(pred_idx),
                                     class_names[int(pred_idx)],
                                     float(confidence),
+                                    float(p_pos),
                                 ]
                             )
 

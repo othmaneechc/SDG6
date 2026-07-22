@@ -123,7 +123,10 @@ def main() -> None:
     k_list = list(preds.keys())
     headers = ["path"]
     for k in k_list:
-        headers += [f"pred_k{k}", f"pred_class_k{k}", f"prob_k{k}"]
+        # prob_k* is the max-class value (kept for backward compatibility);
+        # prob_pos_k* is P(class 1) and is what downstream access/severity
+        # analysis should consume directly, with no 1-p reconstruction.
+        headers += [f"pred_k{k}", f"pred_class_k{k}", f"prob_k{k}", f"prob_pos_k{k}"]
 
     with output_csv.open("w", newline="") as f:
         writer = csv.writer(f)
@@ -131,10 +134,15 @@ def main() -> None:
         for idx, path in enumerate(out_paths):
             row = [path]
             for k in k_list:
-                pred_ids, probs = preds[k]
+                pred_ids, conf, class_probs = preds[k]
                 pred = int(pred_ids[idx])
-                prob = float(probs[idx])
-                row += [pred, class_names[pred], f"{prob:.6f}"]
+                prob = float(conf[idx])
+                p_pos = (
+                    float(class_probs[idx, 1])
+                    if class_probs.ndim == 2 and class_probs.shape[1] == 2
+                    else float("nan")
+                )
+                row += [pred, class_names[pred], f"{prob:.6f}", f"{p_pos:.6f}"]
             writer.writerow(row)
 
     print(f"Wrote predictions to {output_csv}")
