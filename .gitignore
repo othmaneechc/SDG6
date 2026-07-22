@@ -9,5 +9,26 @@ log/
 # dino artifacts
 src/dino_/
 
+# downloaded archives and extracted data/weights (see scripts/download/)
+downloads/
+runs/
+DATABASE/
+logs/
+data/inference/
+data/meta_pop_data/countries_2x2/
+data/meta_pop_data/natural_earth_data/
+data/meta_pop_data/cleaning.ipynb
+data/meta_pop_data/final_summary.py
+data/meta_pop_data/output.png
+data/meta_pop_data/plot_pred_africa.py
+data/meta_pop_data/plot_predictions.py
+data/meta_pop_data/process_meta_pop_data.py
+data/PW-*/
+data/SW-*/
+
+# local tooling
+.venv/
+.pytest_cache/
+
 # checkpoints
 src/dino_/*.pth
