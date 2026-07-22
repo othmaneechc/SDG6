@@ -59,6 +59,24 @@ def parse_args() -> argparse.Namespace:
 
 
 def build_adapter(args: argparse.Namespace):
+    # Galileo takes a weights *directory* and a band specification rather than a
+    # checkpoint path; defaults here mirror scripts/configs/galileo.yaml.
+    if args.model == "galileo":
+        return load_model(
+            "galileo",
+            weights_dir=args.weights,
+            input_resolution_m=10,
+            patch_size=0,
+            band_indices=[0, 1, 2],
+            band_names=["B2", "B3", "B4"],
+            value_scale=1.0,
+            normalize=True,
+            compute_ndvi=False,
+            default_month_index=5,
+            pad_square=True,
+            pad_to_patch_flag=True,
+        )
+
     kwargs = dict(weights=args.weights, resize_size=args.resize, crop_size=args.crop)
     if args.model == "dinov2":
         if args.dinov2_config is None:
