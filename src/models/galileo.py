@@ -1735,7 +1735,7 @@ def load_model(
     pad_square: bool = True,
     pad_to_patch_flag: bool = True,
 ) -> ModelAdapter:
-    device = resolve_device(str(device)) if isinstance(device, str) or device is None else device
+    device = resolve_device(device) if isinstance(device, str) or device is None else device
     dtype = dtype if isinstance(dtype, torch.dtype) else resolve_dtype(str(dtype), device)
 
     weights_path = Path(weights_dir)

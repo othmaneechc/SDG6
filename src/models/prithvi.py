@@ -222,7 +222,7 @@ def load_model(
     fill_value: float = 1e-4,
     value_scale: float = 1.0,
 ) -> ModelAdapter:
-    device = resolve_device(str(device)) if isinstance(device, str) or device is None else device
+    device = resolve_device(device) if isinstance(device, str) or device is None else device
     dtype = dtype if isinstance(dtype, torch.dtype) else resolve_dtype(str(dtype), device)
     requested_band_indices = [int(i) for i in band_indices] if band_indices else None
 

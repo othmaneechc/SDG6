@@ -83,7 +83,7 @@ def load_model(
     dtype: str | torch.dtype = "auto",
     weights_type: str = "auto",
 ) -> ModelAdapter:
-    device = resolve_device(str(device)) if isinstance(device, str) or device is None else device
+    device = resolve_device(device) if isinstance(device, str) or device is None else device
     dtype = dtype if isinstance(dtype, torch.dtype) else resolve_dtype(str(dtype), device)
 
     try:
