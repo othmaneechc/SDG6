@@ -134,7 +134,7 @@ def main() -> int:
         tr = (df["orig_split"] == "train").to_numpy()
         te = (df["orig_split"] == "test").to_numpy()
         for k, auc in knn_auroc(X[tr], y[tr], X[te], y[te], args.temp).items():
-            rows.append({"scheme": "original", "task": args.task, "fold": 0,
+            rows.append({"model": args.model, "scheme": "original", "task": args.task, "fold": 0,
                          "k": k, "n_train": int(tr.sum()), "n_test": int(te.sum()),
                          "auroc": auc})
             print(f"  original k={k:<4} auroc={auc*100:.2f}%")
@@ -148,7 +148,7 @@ def main() -> int:
             aucs = knn_auroc(X[tr], y[tr], X[te], y[te], args.temp)
             label = df.loc[te, "country"].iloc[0] if args.scheme == "country" else f
             for k, auc in aucs.items():
-                rows.append({"scheme": args.scheme, "task": args.task, "fold": label,
+                rows.append({"model": args.model, "scheme": args.scheme, "task": args.task, "fold": label,
                              "k": k, "n_train": int(tr.sum()), "n_test": int(te.sum()),
                              "auroc": auc})
             print(f"  {args.scheme} fold={label} n_test={int(te.sum()):>6} "

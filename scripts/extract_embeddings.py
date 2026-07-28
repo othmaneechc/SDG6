@@ -55,10 +55,39 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--splits", nargs="+", default=["train", "val", "test"])
     p.add_argument("--limit", type=int, default=0,
                    help="Debug: cap rows per split (0 = all).")
+    # Galileo input-scaling controls, for the preprocessing diagnostic. The tiles
+    # are uint8 RGB (0-255) but Galileo normalizes against Sentinel-2 reflectance
+    # stats (0-10000 scale); --value-scale multiplies the raw input before
+    # Galileo's own normalize step so it can be brought into the expected range.
+    p.add_argument("--value-scale", type=float, default=1.0)
+    p.add_argument("--galileo-normalize", dest="galileo_normalize",
+                   action="store_true", default=True)
+    p.add_argument("--no-galileo-normalize", dest="galileo_normalize",
+                   action="store_false")
     return p.parse_args()
 
 
 def build_adapter(args: argparse.Namespace):
+    # Galileo takes a weights *directory* and a band specification rather than a
+    # checkpoint path; defaults here mirror scripts/configs/galileo.yaml.
+    if args.model == "galileo":
+        print(f"galileo input: value_scale={args.value_scale} "
+              f"normalize={args.galileo_normalize}")
+        return load_model(
+            "galileo",
+            weights_dir=args.weights,
+            input_resolution_m=10,
+            patch_size=0,
+            band_indices=[0, 1, 2],
+            band_names=["B2", "B3", "B4"],
+            value_scale=args.value_scale,
+            normalize=args.galileo_normalize,
+            compute_ndvi=False,
+            default_month_index=5,
+            pad_square=True,
+            pad_to_patch_flag=True,
+        )
+
     kwargs = dict(weights=args.weights, resize_size=args.resize, crop_size=args.crop)
     if args.model == "dinov2":
         if args.dinov2_config is None:

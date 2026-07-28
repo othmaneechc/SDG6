@@ -35,3 +35,7 @@ src/dino_/*.pth
 
 # derived manifest (35MB, rebuild with scripts/build_manifest.py)
 data/manifest_*.csv
+
+# regenerable calibration intermediates (rebuild via scripts/eval_calibration.py)
+outputs/tables/valprobs_*.npy
+outputs/tables/valy_*.npy
