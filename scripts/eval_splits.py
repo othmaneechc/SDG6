@@ -120,8 +120,11 @@ def main() -> int:
     df, X = load_embeddings(args.emb_dir)
 
     # country/urbrur live in the manifest, not the embedding files
-    man = pd.read_csv(REPO / "data" / "manifest_sentinel.csv",
-                      usecols=["path", "country", "urbrur"])
+    man = pd.read_csv(REPO / "data" / "manifest_sentinel.csv")
+    # country identity for LOCO: the reverse-geocoded real country, since the
+    # raw Afrobarometer code is per-round and not comparable across rounds.
+    cc = "country_name" if "country_name" in man.columns else "country"
+    man = man[["path", cc, "urbrur"]].rename(columns={cc: "country"})
     df = df.merge(man, on="path", how="left")
     if df["country"].isna().any():
         raise SystemExit("Some rows have no country; rebuild the manifest.")
