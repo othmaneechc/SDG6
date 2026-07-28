@@ -128,22 +128,32 @@ def load_dino_and_dinov2(
             k = int(k_match.group(1))
 
             model = "dino" if run_dir == "dino-knn" else "dinov2"
-            y_true, pred_idx, conf = [], [], []
+            y_true, pred_idx, conf, p_pos = [], [], [], []
             with file_path.open("r", newline="") as f:
                 reader = csv.DictReader(f)
+                has_p_pos = "prob_positive" in (reader.fieldnames or [])
                 for row in reader:
                     y_true.append(int(row["true_label_idx"]))
                     pred_idx.append(int(row["pred_label_idx"]))
                     conf.append(float(row["confidence"]))
+                    if has_p_pos:
+                        p_pos.append(float(row["prob_positive"]))
 
             y_true_arr = np.asarray(y_true, dtype=np.int64)
             pred_idx_arr = np.asarray(pred_idx, dtype=np.int64)
             conf_arr = np.asarray(conf, dtype=np.float64)
 
-            # confidence is max predicted-class vote; use signed value so
-            # higher means more evidence for positive class (idx=1).
-            signed_score = np.where(pred_idx_arr == 1, conf_arr, -conf_arr)
-            auroc = auc_rank(y_true_arr, signed_score)
+            if has_p_pos:
+                # Preferred: the true P(y=1). Correct for every k.
+                score = np.asarray(p_pos, dtype=np.float64)
+                metric_type = "auroc_prob_positive"
+            else:
+                # Legacy fallback for runs predating the WS-0 fix. This signed
+                # max-confidence score is a monotone transform of P(y=1) ONLY
+                # when the class scores sum to 1, i.e. only when k == max_k.
+                score = np.where(pred_idx_arr == 1, conf_arr, -conf_arr)
+                metric_type = "auroc_signed_conf"
+            auroc = auc_rank(y_true_arr, score)
 
             records.append(
                 {
@@ -151,7 +161,7 @@ def load_dino_and_dinov2(
                     "model": model,
                     "k": k,
                     "auroc": auroc,
-                    "metric_type": "auroc_signed_conf",
+                    "metric_type": metric_type,
                     "checkpoint": checkpoint,
                     "source_file": str(file_path),
                 }
