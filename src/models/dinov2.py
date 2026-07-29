@@ -73,7 +73,7 @@ def load_model(
     crop_size: int = 224,
     opts: Sequence[str] | None = None,
 ) -> ModelAdapter:
-    device = resolve_device(str(device)) if isinstance(device, str) or device is None else device
+    device = resolve_device(device) if isinstance(device, str) or device is None else device
     dtype = dtype if isinstance(dtype, torch.dtype) else resolve_dtype(str(dtype), device)
 
     repo_dir = repo_dir or os.environ.get("DINOV2_REPO")
