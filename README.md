@@ -1,125 +1,143 @@
 # SDG6 Tracker
 
-This repository contains the code for the paper:
+Code and reproducible experiment artifacts for:
 
-Seeing SDG 6 from space: local-scale monitoring of piped water and sewage system access across Africa using satellite imagery and self-supervised learning
-https://arxiv.org/abs/2411.19093
+**Seeing SDG 6 from space: local-scale monitoring of piped water and sewage
+system access across Africa using satellite imagery and self-supervised
+learning**
 
-It provides a unified pipeline for:
-- pretraining DINO/DINOv2 backbones
-- extracting embeddings
-- k‑NN evaluation/classification
-- large‑scale inference on new imagery
+Paper: https://arxiv.org/abs/2411.19093
 
-The core design is a model‑agnostic CLI and adapter layer, so you can switch encoders without touching the data/metric code.
+The repository supports three tasks:
 
-## Repository layout
-- src/models: single‑file adapters (dino, dinov2, dinov3, prithvi, galileo)
-- src/sdg6: data loader, embedding extraction, k‑NN logic, CLI, inference
-- scripts/configs: YAML configs for train/eval/inference
-- scripts/slurm: SLURM launchers
-- scripts/training: Python wrappers for pretraining
-- scripts/analysis: Python analysis workflows (including converted notebooks)
-- outputs: generated artifacts (`figures/`, `tables/`, `reports/`)
+- train or load satellite image encoders;
+- extract reusable image embeddings;
+- evaluate, calibrate, and run k-NN access prediction experiments.
 
-## External Sources
-- DINO adapter: https://github.com/facebookresearch/dino (Caron et al., 2021, https://arxiv.org/abs/2104.14294)
-- DINOv2 adapter: https://github.com/facebookresearch/dinov2 (Oquab et al., 2023, https://arxiv.org/abs/2304.07193)
-- DINOv3 adapter: https://github.com/facebookresearch/dinov3 and HF model cards under https://huggingface.co/facebook
-- Prithvi adapter: TerraTorch registry (https://github.com/IBM/terratorch) + IBM/NASA Geospatial checkpoints (https://huggingface.co/ibm-nasa-geospatial)
-- Galileo adapter: adapted from https://github.com/nasaharvest/galileo
+## Layout
 
-## Data and Weights
-- Galileo model weights: hosted on Hugging Face (base model used here), e.g. https://huggingface.co/nasaharvest/galileo
-- DINO and DINOv2 weights: Zenodo, https://zenodo.org/records/19156085
-- Inference results: Zenodo, https://zenodo.org/records/19156085
-- Population density patches: Zenodo, https://zenodo.org/records/19156085
-- Afrobarometer imagery tiles: Zenodo, https://zenodo.org/records/14740420
+- `src/models/`: model adapters for DINO, DINOv2, DINOv3, Prithvi, and Galileo.
+- `src/sdg6/`: datasets, embedding extraction, k-NN, inference, and split helpers.
+- `scripts/configs/`: YAML configs for training, evaluation, export, and inference.
+- `scripts/slurm/`: cluster launchers.
+- `scripts/analysis/`: figure, table, and appendix analysis scripts.
+- `outputs/`: committed figures, tables, reports, and calibrators.
 
-## Environment
-Use uv to sync dependencies in this repo:
+## Setup
 
 ```bash
 uv sync
 ```
 
-## Pretraining (DINOv2)
-Pretraining is driven by a YAML config and a wrapper that launches torchrun.
+The repo uses Python 3.10/3.11 and PyTorch. Most full experiments are intended
+for a GPU node.
 
-1) Edit the pretraining config:
+## Data And Weights
 
-scripts/configs/dinov2_pt.yaml
+Published data and weights are external:
 
-Key fields:
-- dinov2_repo: local clone of the DINOv2 repo
-- config_file: DINOv2 training config YAML (satellite config)
-- output_dir: output directory for checkpoints and logs
-- gpus_per_node, master_port
+- DINO/DINOv2 weights, inference results, and population patches:
+  https://zenodo.org/records/19156085
+- Afrobarometer imagery tiles:
+  https://zenodo.org/records/14740420
+- Galileo weights:
+  https://huggingface.co/nasaharvest/galileo
 
-2) Launch pretraining:
-
-```bash
-sbatch scripts/slurm/dinov2_pt.sbatch
-```
-
-## k‑NN evaluation/classification
-Evaluation uses the unified CLI and the DINOv2‑aligned k‑NN logic (cosine similarity + softmax voting).
-
-1) Configure the eval:
-
-scripts/configs/dinov2.yaml
-
-Key fields:
-- data_dir: dataset with train/val/test class folders
-- weights: DINOv2 checkpoint (teacher_checkpoint.pth)
-- dinov2_config: DINOv2 training config
-- knn_classifier_path: where to save the k‑NN classifier artifact
-
-2) Run k‑NN evaluation:
+Download and extract the released artifacts:
 
 ```bash
-sbatch scripts/slurm/dinov2.sbatch
+bash scripts/download/download_all_login.sh
+sbatch scripts/slurm/extract_data.sbatch
 ```
 
-Outputs:
-- Embeddings (optional): output_dir/embeddings
-- Confusion reports: output_dir/confusion
-- k‑NN classifier artifact: path set in knn_classifier_path
+Build the manifest used by the current experiments:
 
-## Inference on arbitrary images
-Inference uses the saved k‑NN classifier artifact and a DINOv2 encoder to produce predictions on new images.
+```bash
+python scripts/build_manifest.py --base-dir DATABASE/RAW --out data/manifest_sentinel.csv
+```
 
-1) Configure inference:
+The manifest stores one row per image with both labels, split, coordinates,
+country, and settlement type. It replaces duplicated ImageFolder symlink trees.
 
-scripts/configs/dinov2_infer.yaml
+## Main Experiments
 
-Key fields:
-- weights, dinov2_config: DINOv2 encoder settings
-- knn_classifier_path: saved artifact from evaluation
-- input_dir or input_list: images to score
-- output_csv: where predictions are written
+Extract DINOv2 embeddings once:
 
-2) Run inference on many countries:
+```bash
+sbatch scripts/slurm/extract_embeddings.sbatch
+```
+
+Run the released split, random folds, spatial-block folds, and
+leave-one-country-out:
+
+```bash
+sbatch scripts/slurm/eval_splits.sbatch
+```
+
+Run the urban/rural baseline and settlement-stratified AUROC:
+
+```bash
+sbatch scripts/slurm/eval_baselines.sbatch
+```
+
+Run probability calibration:
+
+```bash
+sbatch scripts/slurm/eval_calibration.sbatch
+```
+
+Run LGA burden uncertainty:
+
+```bash
+python scripts/burden_uncertainty.py --task pw
+python scripts/burden_uncertainty.py --task sw
+```
+
+Run country inference from a saved k-NN classifier:
 
 ```bash
 sbatch scripts/slurm/dinov2_infer.sbatch
 ```
 
-This sbatch loops over data/countries and writes SW/PW predictions under data/inference/<country>.
+## Appendix Artifacts
 
-## Adding a new model
-1) Create a new adapter in src/models/<name>.py that returns a ModelAdapter:
-   - transform(image, path=None)
-   - reader(path)
-   - collate_fn
-   - encode(batch) returning L2‑normalized features
-2) Register it in src/models/__init__.py
-3) Run the unified CLI:
+The appendix experiments are part of the reproducible artifact set:
+
+- `outputs/tables/split_scheme_auroc.csv`: original, random, spatial-block, and
+  leave-one-country-out AUROC.
+- `outputs/tables/baseline_stratified_auroc.csv`: urban/rural baseline and
+  within-settlement AUROC.
+- `outputs/tables/calibration_summary.csv` and
+  `outputs/tables/calibration_reliability.csv`: Brier, ECE, AUROC, and
+  reliability data.
+- `outputs/tables/burden_uncertainty.csv`: LGA burden point estimates and
+  bootstrap intervals.
+- `outputs/tables/equal_k_auroc.csv`: matched-k DINO/DINOv2 comparison.
+- `outputs/tables/galileo_norm_test_auroc.csv`: Galileo input-scale diagnostic.
+- `outputs/figures/spatial_blocks_cv.png`: spatial-block 5-fold assignment.
+
+Regenerate the spatial-block figure and its block assignment table:
+
+```bash
+python scripts/analysis/plot_spatial_blocks.py
+```
+
+## k-NN Prediction
+
+The classifier stores training embeddings and labels. For a new image it:
+
+1. extracts an encoder embedding;
+2. finds the nearest training embeddings by cosine similarity;
+3. softmax-weights the top `k` neighbors;
+4. predicts the class with the larger weighted probability.
+
+For binary access tasks, `prob_positive` / `prob_pos_k*` is `P(access)`.
+
+## Adding A Model
+
+Add `src/models/<name>.py` with a `ModelAdapter`, register it in
+`src/models/__init__.py`, then run:
 
 ```bash
 python -m sdg6.cli --model <name> ...
 ```
-
-## Notes
-- The unified dataloader expects ImageFolder structure for classification: data_dir/train|val|test/<class_name>/*.tif
-- The k‑NN logic is aligned to DINOv2: cosine similarity + softmax voting (temperature configurable).

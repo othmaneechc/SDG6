@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Uncertainty on the LGA-level burden estimates (Reviewer 1, point 3).
+"""Uncertainty on the LGA-level burden estimates.
 
 The paper reports burden figures as bare point estimates -- 1.155 and 1.452
 million people in the highest-burden LGAs, top-decile shares of 21.2% and 20.9%

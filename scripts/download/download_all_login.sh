@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Download all SDG6-Tracker data and weights (~48 GB).
 #
-# MUST run on a Rorqual LOGIN node: compute nodes have no outbound internet and
-# batch download jobs are SIGTERM-killed almost immediately. Extraction needs no
-# network and is done separately by scripts/slurm/extract_data.sbatch.
+# Run on a login node with outbound internet. On many clusters, compute nodes
+# cannot download external files. Extraction needs no network and is done
+# separately by scripts/slurm/extract_data.sbatch.
 #
 #   nohup bash scripts/download/download_all_login.sh > logs/download.log 2>&1 &
 #

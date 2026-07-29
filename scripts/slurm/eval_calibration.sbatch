@@ -8,7 +8,7 @@
 #SBATCH --output=logs/%x-%j.out
 #SBATCH --error=logs/%x-%j.err
 
-# Calibration of the access probabilities (Reviewer 1, point 3).
+# Calibration of the access probabilities.
 #   sbatch scripts/slurm/eval_calibration.sbatch
 
 set -uo pipefail

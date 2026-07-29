@@ -8,7 +8,7 @@
 #SBATCH --output=logs/%x-%j.out
 #SBATCH --error=logs/%x-%j.err
 
-# Score the same embeddings under every split scheme (Reviewer 1 point 4).
+# Score the same embeddings under every split scheme.
 #
 # The `original` scheme runs first and doubles as an end-to-end sanity check:
 # it must reproduce the published AUROC (~91.54% PW, ~93.24% SW at k=200). If it

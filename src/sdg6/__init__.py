@@ -1,5 +1,5 @@
-"""SDG6 embedding + k-NN benchmarking utilities."""
+"""SDG6 embedding and k-NN benchmarking utilities."""
 
-from . import data, embedding, knn
+from . import data, embedding, knn, splits
 
-__all__ = ["data", "embedding", "knn"]
+__all__ = ["data", "embedding", "knn", "splits"]

@@ -1,55 +1,38 @@
-# Scripts Layout
+# Scripts
 
-This directory is organized for camera-ready use with portable paths.
+This directory contains the reproducible command-line workflows for the paper
+and appendix.
 
-- `scripts/slurm/`:
-  SLURM launchers for training, evaluation, inference, and GEE export.
-- `scripts/configs/`:
-  YAML configs consumed by `sdg6.cli`, `sdg6.infer_knn`, and training wrappers.
-- `scripts/training/`:
-  Python wrappers for DINO and DINOv2 pretraining.
-- `scripts/analysis/`:
-  Plotting/statistics scripts (including converted notebook workflows).
+## Core Scripts
 
-## SLURM launchers
+- `build_manifest.py`: build `data/manifest_sentinel.csv`.
+- `extract_embeddings.py`: encode manifest images once for both tasks.
+- `eval_splits.py`: original, random, spatial-block, and country-held-out AUROC.
+- `eval_baselines.py`: urban/rural baseline and settlement-stratified AUROC.
+- `eval_calibration.py`: calibration methods, Brier score, ECE, and reliability.
+- `burden_uncertainty.py`: bootstrap intervals for LGA burden estimates.
+- `eval_full_metrics.py`: accuracy, recall, F1, and AUROC at a chosen `k`.
+- `galileo_bestk.py`: validation-based `k` selection for Galileo diagnostics.
 
-- `scripts/slurm/dino.sbatch` — k-NN for DINO checkpoints (`scripts/configs/dino.yaml`)
-- `scripts/slurm/dinov2.sbatch` — k-NN for DINOv2 checkpoints (`scripts/configs/dinov2.yaml`)
-- `scripts/slurm/dinov3.sbatch` — k-NN for DINOv3 checkpoints (`scripts/configs/dinov3.yaml`)
-- `scripts/slurm/prithvi.sbatch` — k-NN for Prithvi checkpoints (`scripts/configs/prithvi.yaml`)
-- `scripts/slurm/galileo.sbatch` — k-NN for Galileo checkpoints (`scripts/configs/galileo.yaml`)
-- `scripts/slurm/dino_pt.sbatch` — DINO pretraining (`scripts/configs/dino_pt.yaml`)
-- `scripts/slurm/dinov2_pt.sbatch` — DINOv2 pretraining (`scripts/configs/dinov2_pt.yaml`)
-- `scripts/slurm/dinov2_infer.sbatch` — batched country inference (`scripts/configs/dinov2_infer.yaml`)
-- `scripts/slurm/gee_export_tiles.sbatch` — Sentinel tile export (`scripts/configs/gee_export_tiles.yaml`)
+## Subdirectories
 
-Examples:
+- `configs/`: YAML configs consumed by the CLI and training wrappers.
+- `slurm/`: cluster launchers for long GPU or IO jobs.
+- `training/`: DINO and DINOv2 pretraining wrappers.
+- `analysis/`: figure, table, and appendix plotting scripts.
+- `download/`: data and weight download helpers.
+
+## Common Commands
 
 ```bash
-sbatch scripts/slurm/dinov2.sbatch
-CONFIG=scripts/configs/galileo.yaml sbatch scripts/slurm/galileo.sbatch
-sbatch scripts/slurm/dinov3.sbatch -- --device cuda:1
+bash scripts/download/download_all_login.sh
+sbatch scripts/slurm/extract_data.sbatch
+sbatch scripts/slurm/extract_embeddings.sbatch
+sbatch scripts/slurm/eval_splits.sbatch
+sbatch scripts/slurm/eval_baselines.sbatch
+sbatch scripts/slurm/eval_calibration.sbatch
+python scripts/analysis/plot_spatial_blocks.py
 ```
 
-## Analysis scripts
-
-- `python scripts/analysis/plot_nigeria_access_hotspots.py`
-- `python scripts/analysis/plot_no_survey_population_cdf.py`
-- `python scripts/analysis/compute_dino_family_auroc.py`
-- `python scripts/analysis/figures.py`
-- `python scripts/analysis/stats.py`
-- `python scripts/analysis/urban_rural_split_analysis.py`
-- `python scripts/analysis/count_unique_countries.py`
-
-## Portable path defaults
-
-Analysis scripts default to repo-relative paths and can be overridden with:
-
-- `SDG6_DATA_ROOT` (defaults to `data/`)
-- `SDG6_RUNS_ROOT` (defaults to `runs/`)
-
-Generated artifacts are written under `outputs/`:
-
-- `outputs/figures/`
-- `outputs/tables/`
-- `outputs/reports/`
+Outputs are written under `outputs/figures/`, `outputs/tables/`, and
+`outputs/reports/`.

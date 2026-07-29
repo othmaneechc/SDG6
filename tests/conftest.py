@@ -1,15 +1,13 @@
-"""Test configuration — keep BLAS/OpenMP single-threaded.
-
-Rorqual login nodes cap the per-user process/thread count, and torch's OpenMP
-runtime aborts with "libgomp: Thread creation failed: Resource temporarily
-unavailable" when it tries to spawn a thread per core. pytest then dies with no
-output at all, which is confusing to debug. These variables must be set before
-torch is imported, so this module is deliberately import-light.
-"""
+"""Test configuration for local imports and single-threaded math libraries."""
 
 from __future__ import annotations
 
 import os
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 
 for _var in (
     "OMP_NUM_THREADS",

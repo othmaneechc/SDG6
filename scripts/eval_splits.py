@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 """Evaluate k-NN under different split schemes on pre-extracted embeddings.
 
-Reviewer 1 point 4: the released split shuffles survey locations at random, so a
-test location can sit beside a training location. Given how strongly settlement
-structure is spatially autocorrelated, that can inflate held-out AUROC, and the
-paper's claim is transfer to *unsampled* areas and countries. This script scores
-the same encoder under:
+The released split shuffles survey locations at random, so a test location can
+sit beside a training location. Since settlement structure is spatially
+autocorrelated, this script also reports harder transfer checks:
 
     original  the released 80/10/10 split (train -> test), for continuity
     random    K-fold over locations, shuffled at random
     spatial   K-fold over spatial blocks, so whole neighbourhoods are held out
-    country   leave-one-country-out, matching the transfer claim
+    country   leave-one-country-out, matching the unsampled-country claim
 
 All schemes share one code path and the corrected k-NN scoring, so differences
 are attributable to the split and not to the metric. Folds are over *locations*,
@@ -35,6 +33,12 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from sdg6.knn import _knn_softmax_vote_with_probs  # noqa: E402
+from sdg6.splits import (  # noqa: E402
+    assign_balanced_group_folds,
+    assign_one_group_per_fold,
+    location_keys,
+    spatial_block_keys,
+)
 
 K_VALUES = [5, 10, 20, 50, 100, 200]
 
@@ -79,24 +83,17 @@ def load_embeddings(emb_dir: Path) -> pd.DataFrame:
 def assign_folds(df: pd.DataFrame, scheme: str, n_folds: int,
                  block_deg: float, seed: int) -> np.ndarray:
     """Fold id per row. Grouping is always at location (or coarser) level."""
-    rng = np.random.default_rng(seed)
     if scheme == "random":
-        keys = list(zip(df["lat"], df["lon"]))
+        keys = location_keys(df["lat"], df["lon"])
+        return assign_balanced_group_folds(keys, n_folds, seed)
     elif scheme == "spatial":
-        keys = list(zip(np.floor(df["lat"] / block_deg).astype(int),
-                        np.floor(df["lon"] / block_deg).astype(int)))
+        keys = spatial_block_keys(df["lat"], df["lon"], block_deg)
+        return assign_balanced_group_folds(keys, n_folds, seed)
     elif scheme == "country":
         keys = list(df["country"])
+        return assign_one_group_per_fold(keys)
     else:
         raise ValueError(scheme)
-
-    uniq = sorted(set(keys), key=lambda x: str(x))
-    if scheme == "country":
-        mapping = {g: i for i, g in enumerate(uniq)}   # one fold per country
-    else:
-        order = rng.permutation(len(uniq))
-        mapping = {g: int(order[i] % n_folds) for i, g in enumerate(uniq)}
-    return np.array([mapping[k] for k in keys], dtype=int)
 
 
 def knn_auroc(train_X, train_y, test_X, test_y, temp: float) -> dict[int, float]:
@@ -119,9 +116,9 @@ def main() -> int:
     args = parse_args()
     df, X = load_embeddings(args.emb_dir)
 
-    # country/urbrur live in the manifest, not the embedding files
+    # Country and settlement type live in the manifest, not the embedding files.
     man = pd.read_csv(REPO / "data" / "manifest_sentinel.csv")
-    # country identity for LOCO: the reverse-geocoded real country, since the
+    # Country identity for LOCO: the reverse-geocoded real country, since the
     # raw Afrobarometer code is per-round and not comparable across rounds.
     cc = "country_name" if "country_name" in man.columns else "country"
     man = man[["path", cc, "urbrur"]].rename(columns={cc: "country"})

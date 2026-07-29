@@ -10,7 +10,7 @@
 # Extract the downloaded SDG6-Tracker archives into the layout the configs
 # expect. This runs as a batch job on purpose: unzipping ~48 GB is IO/CPU heavy
 # and needs NO network, so it belongs on a compute node. (The *download* itself
-# cannot run here — Rorqual compute nodes have no outbound internet.)
+# may need to run on a login node with outbound internet.)
 #
 #   sbatch scripts/slurm/extract_data.sbatch
 #

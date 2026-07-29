@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-"""Urban/rural baseline and stratified AUROC (Reviewer 1, point 1).
+"""Urban/rural baseline and stratified AUROC.
 
-The reviewer's decisive objection is that the embeddings may be detecting
-urbanisation rather than infrastructure, since access is strongly confounded
-with settlement type. Two complementary tests, both on the same folds and the
-same corrected k-NN scoring:
+Access is strongly correlated with settlement type, so this script separates
+imagery signal from the urban/rural shortcut. It runs two checks on the same
+folds and corrected k-NN scoring:
 
   marginal    AUROC of a trivial classifier using ONLY the survey's urban/rural
-              indicator -- baseline (iv) in the review -- against AUROC of the
-              image embeddings. Answers "how much does imagery beat the
+              indicator against AUROC of the image embeddings. Answers
+              "how much does imagery beat the
               confounder?"
 
   stratified  AUROC of the embeddings computed WITHIN urban areas and WITHIN
@@ -40,6 +39,11 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from sdg6.knn import _knn_softmax_vote_with_probs  # noqa: E402
+from sdg6.splits import (  # noqa: E402
+    assign_balanced_group_folds,
+    location_keys,
+    spatial_block_keys,
+)
 
 K_EVAL = 200
 URBAN, RURAL, SEMI = 1.0, 2.0, 3.0
@@ -83,16 +87,11 @@ def load_all(emb_dir: Path) -> tuple[pd.DataFrame, np.ndarray]:
 
 
 def assign_folds(df, scheme, n_folds, block_deg, seed):
-    rng = np.random.default_rng(seed)
     if scheme == "random":
-        keys = list(zip(df["lat"], df["lon"]))
+        keys = location_keys(df["lat"], df["lon"])
     else:
-        keys = list(zip(np.floor(df["lat"] / block_deg).astype(int),
-                        np.floor(df["lon"] / block_deg).astype(int)))
-    uniq = sorted(set(keys))
-    order = rng.permutation(len(uniq))
-    mapping = {g: int(order[i] % n_folds) for i, g in enumerate(uniq)}
-    return np.array([mapping[k] for k in keys], dtype=int)
+        keys = spatial_block_keys(df["lat"], df["lon"], block_deg)
+    return assign_balanced_group_folds(keys, n_folds, seed)
 
 
 def knn_probs(train_X, train_y, test_X, temp) -> np.ndarray:
@@ -132,7 +131,7 @@ def main() -> int:
 
         p_img = knn_probs(X[tr], y[tr], X[te], args.temp)
 
-        # Baseline (iv): P(access | urban/rural), frequencies from TRAIN only.
+        # P(access | urban/rural), with frequencies estimated from train only.
         prior = float(y[tr].mean())
         rates = {u: float(y[tr & (ur == u)].mean()) if (tr & (ur == u)).sum() else prior
                  for u in VALID_URBRUR}

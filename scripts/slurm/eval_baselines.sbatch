@@ -8,7 +8,7 @@
 #SBATCH --output=logs/%x-%j.out
 #SBATCH --error=logs/%x-%j.err
 
-# Urban/rural baseline and stratified AUROC (Reviewer 1, point 1).
+# Urban/rural baseline and stratified AUROC.
 #
 #   sbatch scripts/slurm/eval_baselines.sbatch
 

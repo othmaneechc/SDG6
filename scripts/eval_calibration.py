@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Calibration of the access probabilities (Reviewer 1, point 3).
+"""Calibration of the access probabilities.
 
-The reviewer's objection separates into two things that are easy to conflate:
+The paper reports both ranking quality and probability-scale quantities. These
+are different things:
 
   ranking      does a higher score mean a higher chance of access?  (AUROC)
   calibration  when the model says 0.8, is it right 80% of the time? (Brier/ECE)
