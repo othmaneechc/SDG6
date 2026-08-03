@@ -6,7 +6,11 @@ repo-relative inputs.
 ## Figures
 
 - `figures.py`: main paper figure workflows.
-- `plot_nigeria_access_hotspots.py`: Nigeria burden hotspot maps.
+- `plot_nigeria_access_hotspots.py`: Nigeria LGA-level burden and severity
+  hotspot maps. Emits the composite 2x2 panel (`nigeria_hotspots_composite_abcd.png`,
+  used in the paper), the separate burden and no-access-probability maps, the
+  LGA population map, and the accompanying hotspot, cluster, and LGA metric
+  summary tables (CSV) plus the LaTeX summary table.
 - `plot_no_survey_population_cdf.py`: no-survey population coverage CDF.
 - `plot_spatial_blocks.py`: spatial-block 5-fold assignment figure and table.
 
