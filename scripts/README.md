@@ -7,7 +7,7 @@ and appendix.
 
 - `build_manifest.py`: build `data/manifest_sentinel.csv`.
 - `extract_embeddings.py`: encode manifest images once for both tasks.
-- `eval_splits.py`: original, random, spatial-block, and country-held-out AUROC.
+- `eval_splits.py`: original, random, and region-based (leave-one-region-out) AUROC.
 - `eval_baselines.py`: urban/rural baseline and settlement-stratified AUROC.
 - `eval_calibration.py`: calibration methods, Brier score, ECE, and reliability.
 - `burden_uncertainty.py`: bootstrap intervals for LGA burden estimates.
@@ -31,7 +31,7 @@ sbatch scripts/slurm/extract_embeddings.sbatch
 sbatch scripts/slurm/eval_splits.sbatch
 sbatch scripts/slurm/eval_baselines.sbatch
 sbatch scripts/slurm/eval_calibration.sbatch
-python scripts/analysis/plot_spatial_blocks.py
+python scripts/analysis/plot_region_folds.py
 ```
 
 Outputs are written under `outputs/figures/`, `outputs/tables/`, and

@@ -1,0 +1,36 @@
+fold,region,country,n_locations,n_images
+Northern,Northern,Morocco,440,5236
+Northern,Northern,Sudan,456,5293
+Northern,Northern,Tunisia,443,5198
+Western,Western,Benin,439,2674
+Western,Western,Burkina Faso,449,4786
+Western,Western,Côte d'Ivoire,410,2160
+Western,Western,Gambia,408,4103
+Western,Western,Ghana,1994,12747
+Western,Western,Guinea,448,3469
+Western,Western,Liberia,420,1702
+Western,Western,Mali,447,4987
+Western,Western,Mauritania,139,1632
+Western,Western,Niger,445,5122
+Western,Western,Nigeria,1845,11559
+Western,Western,Senegal,919,10320
+Western,Western,Sierra Leone,439,2698
+Western,Western,Togo,466,3219
+Middle,Middle,Angola,430,3392
+Middle,Middle,Cameroon,421,2378
+Middle,Middle,Congo,113,400
+Middle,Middle,Gabon,619,1906
+Eastern,Eastern,Ethiopia,600,5667
+Eastern,Eastern,Kenya,817,7408
+Eastern,Eastern,Madagascar,879,8977
+Eastern,Eastern,Malawi,438,4138
+Eastern,Eastern,Mozambique,517,5266
+Eastern,Eastern,Tanzania,865,6692
+Eastern,Eastern,Uganda,578,5058
+Eastern,Eastern,Zambia,938,9594
+Eastern,Eastern,Zimbabwe,440,4615
+Southern,Southern,Botswana,426,4888
+Southern,Southern,Lesotho,435,5110
+Southern,Southern,Namibia,506,5871
+Southern,Southern,South Africa,1224,14003
+Southern,Southern,eSwatini,415,4433

@@ -35,7 +35,7 @@ for task in pw sw; do
 done
 
 for task in pw sw; do
-  for scheme in random spatial country; do
+  for scheme in random region; do
     log "=== scheme=$scheme task=$task"
     "$PY" scripts/eval_splits.py --scheme "$scheme" --task "$task" --out "$OUT" || exit 1
   done

@@ -7,15 +7,17 @@ autocorrelated, this script also reports harder transfer checks:
 
     original  the released 80/10/10 split (train -> test), for continuity
     random    K-fold over locations, shuffled at random
-    spatial   K-fold over spatial blocks, so whole neighbourhoods are held out
-    country   leave-one-country-out, matching the unsampled-country claim
+    region    leave-one-region-out over the five UN African subregions
+              (Northern, Western, Middle, Eastern, Southern), so an entire
+              macro-region is held out of training at a time
 
 All schemes share one code path and the corrected k-NN scoring, so differences
-are attributable to the split and not to the metric. Folds are over *locations*,
-never images, so repeat imagery of one place cannot straddle a fold boundary.
+are attributable to the split and not to the metric. Folds are over *locations*
+(random) or whole *subregions* (region), never over individual images, so repeat
+imagery of one place cannot straddle a fold boundary.
 
 Usage:
-    python scripts/eval_splits.py --scheme spatial --task pw
+    python scripts/eval_splits.py --scheme region --task pw
 """
 
 from __future__ import annotations
@@ -35,9 +37,8 @@ sys.path.insert(0, str(REPO / "src"))
 from sdg6.knn import _knn_softmax_vote_with_probs  # noqa: E402
 from sdg6.splits import (  # noqa: E402
     assign_balanced_group_folds,
-    assign_one_group_per_fold,
     location_keys,
-    spatial_block_keys,
+    region_labels,
 )
 
 K_VALUES = [5, 10, 20, 50, 100, 200]
@@ -49,11 +50,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--emb-dir", type=Path, default=REPO / "runs" / "embeddings" / "dinov2")
     p.add_argument("--model", default="dinov2")
     p.add_argument("--task", choices=["pw", "sw"], default="pw")
-    p.add_argument("--scheme", choices=["original", "random", "spatial", "country"],
-                   default="spatial")
-    p.add_argument("--folds", type=int, default=5)
-    p.add_argument("--block-deg", type=float, default=0.5,
-                   help="Spatial block size in degrees (0.5 deg ~ 55 km).")
+    p.add_argument("--scheme", choices=["original", "random", "region"],
+                   default="region")
+    p.add_argument("--folds", type=int, default=5,
+                   help="Number of folds for the random scheme.")
     p.add_argument("--min-test", type=int, default=200,
                    help="Skip folds with fewer than this many test images.")
     p.add_argument("--temp", type=float, default=0.07)
@@ -81,17 +81,17 @@ def load_embeddings(emb_dir: Path) -> pd.DataFrame:
 
 
 def assign_folds(df: pd.DataFrame, scheme: str, n_folds: int,
-                 block_deg: float, seed: int) -> np.ndarray:
-    """Fold id per row. Grouping is always at location (or coarser) level."""
+                 seed: int) -> np.ndarray:
+    """Fold id (random) or region name (region) per row.
+
+    Grouping is at the location level for the random scheme and at the whole
+    UN-subregion level for the region scheme (leave-one-region-out).
+    """
     if scheme == "random":
         keys = location_keys(df["lat"], df["lon"])
         return assign_balanced_group_folds(keys, n_folds, seed)
-    elif scheme == "spatial":
-        keys = spatial_block_keys(df["lat"], df["lon"], block_deg)
-        return assign_balanced_group_folds(keys, n_folds, seed)
-    elif scheme == "country":
-        keys = list(df["country"])
-        return assign_one_group_per_fold(keys)
+    elif scheme == "region":
+        return region_labels(df["country"])
     else:
         raise ValueError(scheme)
 
@@ -116,10 +116,11 @@ def main() -> int:
     args = parse_args()
     df, X = load_embeddings(args.emb_dir)
 
-    # Country and settlement type live in the manifest, not the embedding files.
+    # Country identity lives in the manifest, not the embedding files.
     man = pd.read_csv(REPO / "data" / "manifest_sentinel.csv")
-    # Country identity for LOCO: the reverse-geocoded real country, since the
-    # raw Afrobarometer code is per-round and not comparable across rounds.
+    # Region folds group by the reverse-geocoded real country (raw Afrobarometer
+    # codes are per-round and not comparable across rounds), which is then mapped
+    # to a UN African subregion in assign_folds.
     cc = "country_name" if "country_name" in man.columns else "country"
     man = man[["path", cc, "urbrur"]].rename(columns={cc: "country"})
     df = df.merge(man, on="path", how="left")
@@ -139,14 +140,14 @@ def main() -> int:
                          "auroc": auc})
             print(f"  original k={k:<4} auroc={auc*100:.2f}%")
     else:
-        folds = assign_folds(df, args.scheme, args.folds, args.block_deg, args.seed)
+        folds = assign_folds(df, args.scheme, args.folds, args.seed)
         for f in sorted(set(folds)):
             te = folds == f
             tr = ~te
             if te.sum() < args.min_test or len(np.unique(y[te])) < 2 or tr.sum() < max(K_VALUES):
                 continue
             aucs = knn_auroc(X[tr], y[tr], X[te], y[te], args.temp)
-            label = df.loc[te, "country"].iloc[0] if args.scheme == "country" else f
+            label = f
             for k, auc in aucs.items():
                 rows.append({"model": args.model, "scheme": args.scheme, "task": args.task, "fold": label,
                              "k": k, "n_train": int(tr.sum()), "n_test": int(te.sum()),

@@ -12,7 +12,9 @@ repo-relative inputs.
   LGA population map, and the accompanying hotspot, cluster, and LGA metric
   summary tables (CSV) plus the LaTeX summary table.
 - `plot_no_survey_population_cdf.py`: no-survey population coverage CDF.
-- `plot_spatial_blocks.py`: spatial-block 5-fold assignment figure and table.
+- `plot_region_folds.py`: region-based 5-fold assignment figure and table
+  (survey locations colored by their UN African subregion, the leave-one-region-out
+  cross-validation folds).
 
 ## Tables And Reports
 
