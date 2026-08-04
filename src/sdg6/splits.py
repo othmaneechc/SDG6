@@ -13,20 +13,6 @@ def location_keys(lat: Iterable[float], lon: Iterable[float]) -> list[tuple[floa
     return list(zip(lat, lon))
 
 
-def spatial_block_keys(
-    lat: Iterable[float], lon: Iterable[float], block_deg: float
-) -> list[tuple[int, int]]:
-    """Map coordinates to regular latitude/longitude grid blocks."""
-    lat_arr = np.asarray(list(lat), dtype=float)
-    lon_arr = np.asarray(list(lon), dtype=float)
-    return list(
-        zip(
-            np.floor(lat_arr / block_deg).astype(int),
-            np.floor(lon_arr / block_deg).astype(int),
-        )
-    )
-
-
 def assign_balanced_group_folds(
     keys: Iterable[Hashable], n_folds: int, seed: int
 ) -> np.ndarray:

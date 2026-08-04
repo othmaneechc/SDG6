@@ -4,8 +4,8 @@
 Features do not depend on the task: PW-s and SW-s use the same imagery and the
 same split, and differ only in their labels. So this runs the encoder once and
 stores both label columns alongside the features, which halves the GPU work and
-makes the embeddings reusable for re-splitting (spatial blocks,
-leave-one-country-out) without re-encoding.
+makes the embeddings reusable for re-splitting (random folds,
+leave-one-region-out) without re-encoding.
 
 Output, one file per split under ``<out>/<model>/``::
 

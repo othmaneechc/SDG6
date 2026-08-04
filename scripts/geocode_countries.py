@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Add a real country name to the manifest for leave-one-country-out evaluation.
+"""Add a real country name to the manifest for the region-based (leave-one-region-out) split and the population-density baseline.
 
 The Afrobarometer ``COUNTRY`` field is coded *per round* -- R7, R8 and R9 each
 renumber their countries 1..N -- so the same numeric code denotes different
 countries in different rounds (code 2 is Angola in one round and Botswana in
-another). Grouping leave-one-country-out folds by that raw code therefore pools
+another). Grouping locations by that raw code therefore pools
 unrelated countries and is wrong.
 
 This script assigns each survey location its true country by reverse-geocoding
