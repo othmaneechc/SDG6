@@ -225,6 +225,21 @@ def parse_args() -> argparse.Namespace:
         default=0.34,
         help="Alpha for the green satellite-like texture background.",
     )
+    parser.add_argument(
+        "--calibrator",
+        choices=["none", "isotonic", "platt", "temperature"],
+        default="isotonic",
+        help="Probability calibrator applied to per-tile access probabilities "
+             "before aggregation, using the fitted calibrator_{pw,sw}.npz from "
+             "--calibrator-dir. 'none' keeps the raw k-NN scores. Use 'isotonic' "
+             "to match the calibrated burden intervals in burden_uncertainty.py.",
+    )
+    parser.add_argument(
+        "--calibrator-dir",
+        type=Path,
+        default=tab_dir,
+        help="Directory holding calibrator_{pw,sw}.npz (from eval_calibration.py).",
+    )
 
     args = parser.parse_args()
     args.data_root = Path(args.data_root).expanduser()
@@ -358,6 +373,42 @@ def _prediction_to_access_prob(pred_class: pd.Series, pred_prob: pd.Series) -> p
     return pd.Series(np.where(no_access_mask, 1.0 - probs, probs), index=pred_class.index)
 
 
+def _logit(p: np.ndarray) -> np.ndarray:
+    p = np.clip(p, 1e-6, 1 - 1e-6)
+    return np.log(p / (1 - p))
+
+
+def _sigmoid(x: np.ndarray) -> np.ndarray:
+    return 1.0 / (1.0 + np.exp(-x))
+
+
+def load_calibrator(kind: str, task: str, cal_dir: Path):
+    """Return a callable mapping raw P(access) -> calibrated P(access).
+
+    Mirrors scripts/burden_uncertainty.py so the hotspot figure and the burden
+    intervals share one calibration, reading calibrator_{task}.npz produced by
+    scripts/eval_calibration.py. All three calibrators are monotonic, so hotspot
+    ranks (and therefore which LGAs are flagged) are unchanged; only the absolute
+    probability scale, and hence the burden and severity magnitudes, shifts.
+    """
+    if kind == "none":
+        return lambda p: p
+    f = cal_dir / f"calibrator_{task}.npz"
+    if not f.exists():
+        raise SystemExit(
+            f"missing {f}; run scripts/eval_calibration.py --task {task} first"
+        )
+    d = np.load(f)
+    if kind == "temperature":
+        temp = float(d["temperature"][0])
+        return lambda p: _sigmoid(_logit(p) / temp)
+    if kind == "platt":
+        a, b = float(d["platt_a"][0]), float(d["platt_b"][0])
+        return lambda p: _sigmoid(a * _logit(p) + b)
+    xs, ys = d["iso_x"], d["iso_y"]
+    return lambda p: np.interp(np.clip(p, 0.0, 1.0), xs, ys)
+
+
 def load_country_geometry(country_shapefile: Path, country: str) -> gpd.GeoDataFrame:
     countries = gpd.read_file(country_shapefile)
     if countries.crs is None:
@@ -392,7 +443,8 @@ def load_country_geometry(country_shapefile: Path, country: str) -> gpd.GeoDataF
     return subset[["country", "geometry"]]
 
 
-def load_predictions(pred_csv: Path, service_name: str, k: int | None) -> pd.DataFrame:
+def load_predictions(pred_csv: Path, service_name: str, k: int | None,
+                     calibrator=None) -> pd.DataFrame:
     df = pd.read_csv(pred_csv)
     pred_col = _select_k(df, "pred_class_k", k)
     prob_col = _select_k(df, "prob_k", k)
@@ -402,7 +454,10 @@ def load_predictions(pred_csv: Path, service_name: str, k: int | None) -> pd.Dat
     df = _as_numeric(df, ["lon", "lat", prob_col]).dropna(subset=["lon", "lat", prob_col]).copy()
     df["lon_round"] = df["lon"].round(5)
     df["lat_round"] = df["lat"].round(5)
-    df[f"{service_name}_access_prob"] = _prediction_to_access_prob(df[pred_col], df[prob_col])
+    access = _prediction_to_access_prob(df[pred_col], df[prob_col])
+    if calibrator is not None:
+        access = pd.Series(np.clip(calibrator(access.to_numpy()), 0.0, 1.0), index=access.index)
+    df[f"{service_name}_access_prob"] = access
     return df[["lon_round", "lat_round", f"{service_name}_access_prob"]]
 
 
@@ -426,8 +481,10 @@ def build_tile_frame(args: argparse.Namespace) -> gpd.GeoDataFrame:
         }
     )
 
-    pw = load_predictions(args.pw_csv, "pw", args.k)
-    sw = load_predictions(args.sw_csv, "sw", args.k)
+    pw_calib = load_calibrator(args.calibrator, "pw", args.calibrator_dir)
+    sw_calib = load_calibrator(args.calibrator, "sw", args.calibrator_dir)
+    pw = load_predictions(args.pw_csv, "pw", args.k, pw_calib)
+    sw = load_predictions(args.sw_csv, "sw", args.k, sw_calib)
 
     merged = tiles.merge(pw, on=["lon_round", "lat_round"], how="left").merge(
         sw, on=["lon_round", "lat_round"], how="left"

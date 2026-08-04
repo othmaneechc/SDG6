@@ -1,29 +1,30 @@
 service,metric,cluster_id,cluster_label,top_lga,lga_count,cluster_score,cluster_population,member_lgas
-piped_water,burden,26,Abuja hotspot area (22 LGAs),Abuja,22,7853561.459875439,12591391.048562,Abuja; Ningi; Toro; Bauchi; Akko; Lere; ZangonKataf; Ganjuwa; BirninKudu; Mangu; Alkaleri; Bwari; Kachia; Sumaila; Jema'a; Gwagwalada; Yamaltu/Deba; Gwaram; JosNorth; Tafawa-Balewa; Kagarko; Kauru
-piped_water,burden,0,Alimosho hotspot area (13 LGAs),Alimosho,13,5568034.497866535,11497019.030477,Alimosho; Oshodi/Isolo; AdoOdo/Ota; Kosofe; Mushin; Ifako/Ijaye; Ojo; Ifo; Ikeja; Ajeromi/Ifelodun; Ikorodu; AmuwoOdofin; IjebuNorth
-piped_water,burden,50,Igabi hotspot area (10 LGAs),Igabi,10,3224121.6289838464,4718199.478687,Igabi; Giwa; Chikun; Kubau; Soba; Bichi; Zaria; Kiru; Kumbotso; Rogo
-piped_water,burden,47,Maru hotspot area (9 LGAs),Maru,9,2838022.7712651812,3713710.5423369994,Maru; Zurmi; BirninGwari; DankoWasagu; Gusau; KauraNamoda; Kankara; Bungudu; Tsafe
-piped_water,burden,46,Kwande hotspot area (4 LGAs),Kwande,4,1179977.4622339844,1562369.0356369999,Kwande; Gboko; VandeIkya; Katsina-Ala
-piped_water,burden,37,Gamawa hotspot area (3 LGAs),Gamawa,3,865890.014701418,1168387.4041260001,Gamawa; Jakusko; KafinHausa
-piped_water,severity,20,Safana hotspot area (26 LGAs),Safana,26,22.096818169049413,6404566.756868,Safana; Charanchi; Kurfi; Matazu; Ingawa; Mani; BirninGwari; Danmusa; Sakaba; Kusada; Maru; Dutsi; Faskari; Batsari; Kankara; Sabuwa; Gwiwa; Bindawa; DankoWasagu; Fakai; Giwa; Shanono; Musawa; Mashi; Tsanyawa; Rijau
-piped_water,severity,6,Kwande hotspot area (13 LGAs),Kwande,13,10.764861066833326,3373198.962429,Kwande; Katsina-Ala; Tarka; Ado; VandeIkya; Konshisha; Yala; Ukum; Logo; Ohimini; Bukuru; Bekwarra; GwerEast
-piped_water,severity,34,Muya hotspot area (10 LGAs),Muya,10,8.573295024017854,2631660.062664,Muya; Kajuru; Mariga; Paikoro; Kauru; Rafi; Shiroro; Kachia; Kagarko; Gurara
-piped_water,severity,38,Kuje hotspot area (8 LGAs),Kuje,8,6.653274107586995,1589920.4086799999,Kuje; Edati; Gbako; Katcha; Kogi; Agaie; Toto; Lapai
-piped_water,severity,32,Tafawa-Balewa hotspot area (7 LGAs),Tafawa-Balewa,7,5.737323545319957,1726477.337725,Tafawa-Balewa; Mikang; Bogoro; Toro; Kanam; Pankshin; JosEast
-sewage,burden,4,Akko hotspot area (15 LGAs),Akko,15,5986780.538017869,6842128.124391001,Akko; Bauchi; Ningi; Alkaleri; Gamawa; Ganjuwa; Yamaltu/Deba; KafinHausa; BirninKudu; Darazo; Jakusko; Gwaram; Katagum; Funakaye; Shira
-sewage,burden,38,Zurmi hotspot area (9 LGAs),Zurmi,9,3359527.150962561,3713710.5423369994,Zurmi; Maru; Gusau; DankoWasagu; KauraNamoda; BirninGwari; Bungudu; Tsafe; Kankara
-sewage,burden,19,Toro hotspot area (8 LGAs),Toro,8,3169160.514410913,3691389.3750839997,Toro; Lere; ZangonKataf; JosNorth; Mangu; Jema'a; JosSouth; Kachia
-sewage,burden,23,Igabi hotspot area (6 LGAs),Igabi,6,2460949.5880598603,3048787.656915,Igabi; Chikun; Giwa; Zaria; Kubau; Soba
-sewage,burden,1,Abuja hotspot area (3 LGAs),Abuja,3,2296113.096513782,3830478.2806909997,Abuja; Bwari; Gwagwalada
-sewage,burden,0,Alimosho hotspot area (5 LGAs),Alimosho,5,2159711.4256781377,5592808.916534,Alimosho; AdoOdo/Ota; Oshodi/Isolo; AmuwoOdofin; Ikorodu
-sewage,burden,42,Ungogo hotspot area (3 LGAs),Ungogo,3,1213319.6264625415,1861231.72527,Ungogo; Kano; Kumbotso
-sewage,burden,37,Gboko hotspot area (3 LGAs),Gboko,3,1049040.3796947652,1227474.452869,Gboko; Kwande; VandeIkya
-sewage,burden,56,IdemiliNorth hotspot area (3 LGAs),IdemiliNorth,3,1045339.0426900171,1438992.987425,IdemiliNorth; Aguata; Ihiala
-sewage,burden,59,Lavun hotspot area (3 LGAs),Lavun,3,1015593.4014884823,1135918.048379,Lavun; Mokwa; Mashegu
-sewage,severity,55,Binji hotspot area (22 LGAs),Binji,22,21.26490580385156,4945855.936785001,Binji; Bukkuyum; ArewaDandi; Gudu; Tangaza; SabonBirni; Maradun; Kware; Birnin-Magaji/Kiyaw; Tureta; Illela; Gwadabawa; Tambuwal; Yabo; Wurno; Shagari; Suru; Kalgo; Maiyama; Gwandu; Talata-Mafara; Argungu
-sewage,severity,30,Machina hotspot area (16 LGAs),Machina,16,15.515895420261906,3747163.9334040005,Machina; Baure; Maigatari; Yusufari; Biriniwa; Gagarawa; Jakusko; Bade; Gamawa; Garki; SuleTankarkar; KiriKasama; Zaki; Auyo; Guri; KafinHausa
-sewage,severity,40,Magumeri hotspot area (5 LGAs),Magumeri,5,4.845055057899382,842321.585626,Magumeri; Gubio; Mobbar; Nganzai; Abadam
-sewage,severity,4,Awe hotspot area (4 LGAs),Awe,4,3.8271705815428754,1040311.352391,Awe; Ukum; Katsina-Ala; Logo
-sewage,severity,19,Dukku hotspot area (3 LGAs),Dukku,3,2.910777190359921,1003523.5649969999,Dukku; Kirfi; Alkaleri
-sewage,severity,25,Edati hotspot area (3 LGAs),Edati,3,2.906383530162964,605397.451626,Edati; Gbako; Katcha
-sewage,severity,7,Kaga hotspot area (3 LGAs),Kaga,3,2.890897123011106,596555.208717,Kaga; Damboa; Chibok
+piped_water,burden,27,Abuja hotspot area (21 LGAs),Abuja,21,7578307.188768487,12274178.100031001,Abuja; Ningi; Toro; Bauchi; Akko; Lere; ZangonKataf; Ganjuwa; Alkaleri; BirninKudu; Mangu; Bwari; Gwagwalada; Kachia; Sumaila; Jema'a; Yamaltu/Deba; JosNorth; Gwaram; Tafawa-Balewa; Kagarko
+piped_water,burden,0,Alimosho hotspot area (13 LGAs),Alimosho,13,5636543.05319982,11497019.030477002,Alimosho; AdoOdo/Ota; Oshodi/Isolo; Kosofe; Mushin; Ifako/Ijaye; Ojo; Ikeja; Ifo; Ajeromi/Ifelodun; Ikorodu; AmuwoOdofin; IjebuNorth
+piped_water,burden,36,Igabi hotspot area (11 LGAs),Igabi,11,3495521.0343462983,5329827.945488,Igabi; Giwa; Chikun; Zaria; Kubau; Soba; Bichi; Kumbotso; Kiru; Rogo; Kano
+piped_water,burden,46,Maru hotspot area (9 LGAs),Maru,9,2807276.1343646017,3713710.5423369994,Maru; Zurmi; Gusau; DankoWasagu; BirninGwari; KauraNamoda; Kankara; Bungudu; Tsafe
+piped_water,burden,53,Kwande hotspot area (4 LGAs),Kwande,4,1149637.0344089465,1562369.0356369999,Kwande; Gboko; VandeIkya; Katsina-Ala
+piped_water,burden,33,PortHarcourt hotspot area (3 LGAs),PortHarcourt,3,907035.4679354371,1718152.4336579998,PortHarcourt; Yenagoa; Abua/Odual
+piped_water,burden,38,Gamawa hotspot area (3 LGAs),Gamawa,3,863171.6914302876,1168387.4041260001,Gamawa; Jakusko; KafinHausa
+piped_water,severity,19,Safana hotspot area (27 LGAs),Safana,27,22.542261934773997,6605746.672861001,Safana; Charanchi; Kurfi; Matazu; Ingawa; Mani; Danmusa; BirninGwari; Sakaba; Maru; Dutsi; Faskari; Kusada; Kankara; Batsari; Sabuwa; Bindawa; Gwiwa; Tsanyawa; DankoWasagu; Shanono; Giwa; Fakai; Musawa; Mashi; Rijau; Kankia
+piped_water,severity,7,Kwande hotspot area (13 LGAs),Kwande,13,10.567170704562793,3277208.1821349994,Kwande; Tarka; Katsina-Ala; Ado; Konshisha; Logo; VandeIkya; Ukum; Ohimini; Yala; Bukuru; Bekwarra; Awe
+piped_water,severity,34,Muya hotspot area (10 LGAs),Muya,10,8.410475594674582,2631660.062664,Muya; Kajuru; Mariga; Paikoro; Kauru; Rafi; Shiroro; Kagarko; Kachia; Gurara
+piped_water,severity,32,Tafawa-Balewa hotspot area (6 LGAs),Tafawa-Balewa,6,4.862544172415995,1601466.656831,Tafawa-Balewa; Mikang; Bogoro; Kanam; Toro; Pankshin
+piped_water,severity,37,Edati hotspot area (4 LGAs),Edati,4,3.2818307631978967,797110.898157,Edati; Gbako; Katcha; Agaie
+piped_water,severity,21,Kuje hotspot area (3 LGAs),Kuje,3,2.466443123309884,614148.788058,Kuje; Kogi; Toto
+sewage,burden,5,Akko hotspot area (15 LGAs),Akko,15,6069202.958507599,6842128.124391001,Akko; Bauchi; Ningi; Alkaleri; Gamawa; Ganjuwa; BirninKudu; Yamaltu/Deba; KafinHausa; Darazo; Jakusko; Gwaram; Katagum; Funakaye; Shira
+sewage,burden,37,Zurmi hotspot area (9 LGAs),Zurmi,9,3384447.1851869742,3713710.5423369994,Zurmi; Gusau; Maru; KauraNamoda; DankoWasagu; BirninGwari; Bungudu; Tsafe; Kankara
+sewage,burden,21,Toro hotspot area (8 LGAs),Toro,8,3219027.0969166188,3691389.3750839997,Toro; JosNorth; Lere; ZangonKataf; Mangu; JosSouth; Jema'a; Kachia
+sewage,burden,0,Alimosho hotspot area (6 LGAs),Alimosho,6,2745662.7338827285,6391203.769397,Alimosho; AdoOdo/Ota; Oshodi/Isolo; AmuwoOdofin; Ikorodu; Ifo
+sewage,burden,10,Igabi hotspot area (6 LGAs),Igabi,6,2503561.1177038522,3048787.656915,Igabi; Chikun; Zaria; Giwa; Kubau; Soba
+sewage,burden,1,Abuja hotspot area (3 LGAs),Abuja,3,2464373.453763237,3830478.2806909997,Abuja; Bwari; Gwagwalada
+sewage,burden,35,Ungogo hotspot area (4 LGAs),Ungogo,4,1596554.4807991844,2424345.7430100003,Ungogo; Kano; Kumbotso; Gwale
+sewage,burden,53,Aguata hotspot area (4 LGAs),Aguata,4,1445065.9430958633,1893226.3371179998,Aguata; IdemiliNorth; Anaocha; Ihiala
+sewage,severity,18,Binji hotspot area (19 LGAs),Binji,19,18.30054880575554,4063419.0864800005,Binji; Bukkuyum; Gudu; ArewaDandi; Tangaza; SabonBirni; Kware; Yabo; Tureta; Gwadabawa; Tambuwal; Illela; Wurno; Suru; Shagari; Kalgo; Maiyama; Gwandu; Bodinga
+sewage,severity,30,Machina hotspot area (16 LGAs),Machina,16,15.449259797066034,3747163.933404,Machina; Baure; Yusufari; Biriniwa; Gagarawa; Maigatari; Jakusko; Bade; Garki; Gamawa; SuleTankarkar; Zaki; KiriKasama; Guri; Auyo; KafinHausa
+sewage,severity,40,Magumeri hotspot area (5 LGAs),Magumeri,5,4.820323157531849,842321.5856260001,Magumeri; Gubio; Nganzai; Mobbar; Abadam
+sewage,severity,7,Awe hotspot area (4 LGAs),Awe,4,3.818565685173705,1040311.352391,Awe; Katsina-Ala; Ukum; Logo
+sewage,severity,19,Dukku hotspot area (3 LGAs),Dukku,3,2.8996339384917587,1003523.5649969999,Dukku; Kirfi; Alkaleri
+sewage,severity,27,Edati hotspot area (3 LGAs),Edati,3,2.8926217022611995,605397.451626,Edati; Gbako; Katcha
+sewage,severity,8,Kaga hotspot area (3 LGAs),Kaga,3,2.8816524506713304,596555.208717,Kaga; Damboa; Chibok
+sewage,severity,0,BirninGwari hotspot area (3 LGAs),BirninGwari,3,2.868713495298066,1003367.0288150001,BirninGwari; Sabuwa; Maru
