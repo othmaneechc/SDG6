@@ -39,3 +39,8 @@ data/manifest_*.csv
 # regenerable calibration intermediates (rebuild via scripts/eval_calibration.py)
 outputs/tables/valprobs_*.npy
 outputs/tables/valy_*.npy
+
+# training run outputs
+dino/
+dinov2/
+dinov3/

@@ -68,7 +68,7 @@ def _mode(series: pd.Series):
 def load_labels(csv_paths: list[Path]) -> dict[tuple[float, float], dict[str, object]]:
     """Mirror of prepare_datasets.load_labels, plus COUNTRY and URBRUR.
 
-    COUNTRY enables leave-one-country-out validation; URBRUR supports the
+    COUNTRY enables the region-based split (after reverse-geocoding); URBRUR supports the
     urban/rural baseline and the settlement-stratified analysis.
     """
     frames = []

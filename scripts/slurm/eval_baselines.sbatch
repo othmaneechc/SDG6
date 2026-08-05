@@ -23,10 +23,8 @@ log() { echo "[$(date +'%F %T')] $*"; }
 rm -f "$OUT"
 
 for task in pw sw; do
-  for scheme in random spatial; do
-    log "=== scheme=$scheme task=$task"
-    "$PY" scripts/eval_baselines.py --scheme "$scheme" --task "$task" --out "$OUT" || exit 1
-  done
+  log "=== task=$task"
+  "$PY" scripts/eval_baselines.py --task "$task" --out "$OUT" || exit 1
 done
 
 log "=== summary"

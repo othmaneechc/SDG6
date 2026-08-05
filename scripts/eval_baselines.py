@@ -1,27 +1,24 @@
 #!/usr/bin/env python3
-"""Urban/rural baseline and stratified AUROC.
+"""Confound baselines vs. image embeddings under random 5-fold cross-validation.
 
-Access is strongly correlated with settlement type, so this script separates
-imagery signal from the urban/rural shortcut. It runs two checks on the same
-folds and corrected k-NN scoring:
+Access is strongly correlated with settlement type and population density, so
+this script separates the imagery signal from those confounders. On the same
+folds and corrected k-NN scoring it reports held-out AUROC for:
 
-  marginal    AUROC of a trivial classifier using ONLY the survey's urban/rural
-              indicator against AUROC of the image embeddings. Answers
-              "how much does imagery beat the
-              confounder?"
+  urbrur          the urban/rural indicator alone (training base rate per
+                  settlement class), overall and within urban and within rural
+                  areas;
+  density         log population density alone (nearest Meta grid tile);
+  urbrur_density  logistic regression on both confounders;
+  dinov2          the image embeddings, overall and within each settlement
+                  stratum -- if discrimination survives within a stratum, the
+                  representation carries signal beyond settlement type.
 
-  stratified  AUROC of the embeddings computed WITHIN urban areas and WITHIN
-              rural areas separately. If discrimination collapses inside a
-              stratum, the model was largely separating urban from rural; if it
-              survives, the representation carries information beyond settlement
-              type. This is the stronger of the two tests.
-
-The urban/rural baseline is fit exactly like any other model: class frequencies
-are estimated on the training fold only and applied to the held-out fold, so it
-never sees test labels.
+Every baseline is fit on the training folds and applied to the held-out fold,
+so none sees test labels.
 
 Usage:
-    python scripts/eval_baselines.py --scheme spatial --task pw
+    python scripts/eval_baselines.py --task pw
 """
 
 from __future__ import annotations
@@ -41,11 +38,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from sdg6.knn import _knn_softmax_vote_with_probs  # noqa: E402
-from sdg6.splits import (  # noqa: E402
-    assign_balanced_group_folds,
-    location_keys,
-    spatial_block_keys,
-)
+from sdg6.splits import assign_balanced_group_folds, location_keys  # noqa: E402
 
 K_EVAL = 200
 URBAN, RURAL, SEMI = 1.0, 2.0, 3.0
@@ -58,9 +51,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--emb-dir", type=Path, default=REPO / "runs" / "embeddings" / "dinov2")
     p.add_argument("--model", default="dinov2")
     p.add_argument("--task", choices=["pw", "sw"], default="pw")
-    p.add_argument("--scheme", choices=["random", "spatial"], default="random")
     p.add_argument("--folds", type=int, default=5)
-    p.add_argument("--block-deg", type=float, default=0.5)
     p.add_argument("--grid-root", type=Path,
                    default=REPO / "data" / "meta_pop_data" / "countries_2x2",
                    help="Meta population grid root, for the population-density baseline.")
@@ -91,11 +82,10 @@ def load_all(emb_dir: Path) -> tuple[pd.DataFrame, np.ndarray]:
     return df, np.concatenate(feats, axis=0)
 
 
-def assign_folds(df, scheme, n_folds, block_deg, seed):
-    if scheme == "random":
-        keys = location_keys(df["lat"], df["lon"])
-    else:
-        keys = spatial_block_keys(df["lat"], df["lon"], block_deg)
+def assign_folds(df, n_folds, seed):
+    """Random K-fold over survey locations; grouping by location keeps repeat
+    imagery of one place from straddling a fold boundary."""
+    keys = location_keys(df["lat"], df["lon"])
     return assign_balanced_group_folds(keys, n_folds, seed)
 
 
@@ -158,7 +148,7 @@ def main() -> int:
 
     y = df[args.task].to_numpy()
     ur = df["urbrur"].to_numpy()
-    folds = assign_folds(df, args.scheme, args.folds, args.block_deg, args.seed)
+    folds = assign_folds(df, args.folds, args.seed)
     rows = []
 
     for f in sorted(set(folds)):
@@ -177,7 +167,7 @@ def main() -> int:
         def rec(features, stratum, mask):
             s_img = p_img[mask] if features == "dinov2" else p_ur[mask]
             rows.append({
-                "scheme": args.scheme, "task": args.task, "fold": int(f),
+                "scheme": "random", "task": args.task, "fold": int(f),
                 "features": features, "stratum": stratum,
                 "n": int(mask.sum()), "pos_rate": float(y[te][mask].mean()),
                 "auroc": safe_auroc(y[te][mask], s_img),
@@ -198,7 +188,7 @@ def main() -> int:
         pop_te = has_pop[te]
         if pop_te.sum() >= args.min_n and len(np.unique(y[te][pop_te])) > 1:
             rows.append({
-                "scheme": args.scheme, "task": args.task, "fold": int(f),
+                "scheme": "random", "task": args.task, "fold": int(f),
                 "features": "density", "stratum": "all",
                 "n": int(pop_te.sum()), "pos_rate": float(y[te][pop_te].mean()),
                 "auroc": safe_auroc(y[te][pop_te], log_pop[te][pop_te]),
@@ -213,7 +203,7 @@ def main() -> int:
                 Xte = np.column_stack([dummies(ur[te_p]), scaler.transform(log_pop[te_p].reshape(-1, 1))])
                 lr = LogisticRegression(max_iter=1000).fit(Xtr, y[tr_p])
                 rows.append({
-                    "scheme": args.scheme, "task": args.task, "fold": int(f),
+                    "scheme": "random", "task": args.task, "fold": int(f),
                     "features": "urbrur_density", "stratum": "all",
                     "n": int(te_p.sum()), "pos_rate": float(y[te_p].mean()),
                     "auroc": safe_auroc(y[te_p], lr.predict_proba(Xte)[:, 1]),
