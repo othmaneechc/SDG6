@@ -218,6 +218,16 @@ def main() -> int:
     tot = res["burden"].sum()
     dec = res.nlargest(max(1, len(res) // 10), "burden")["burden"].sum()
     print(f"\n  total burden {tot/1e6:.3f} M; top-decile share {dec/tot*100:.1f}%")
+
+    # Bootstrap CIs for the across-LGA summary statistics used in the burden text.
+    med_b = np.nanmedian(boot, axis=1)
+    ratio_b = np.nanmax(boot, axis=1) / np.nanmean(boot, axis=1)
+    med_lo, med_hi = np.nanpercentile(med_b, [2.5, 97.5])
+    ratio_lo, ratio_hi = np.nanpercentile(ratio_b, [2.5, 97.5])
+    print(f"  median LGA burden {point.median() / 1e6:.3f} M  "
+          f"95% CI [{med_lo / 1e6:.3f}, {med_hi / 1e6:.3f}] M")
+    print(f"  max/mean ratio {point.max() / point.mean():.2f}  "
+          f"95% CI [{ratio_lo:.2f}, {ratio_hi:.2f}]")
     print(f"  wrote {args.out}")
     return 0
 
