@@ -132,13 +132,16 @@ def main() -> int:
                         usecols=["centroid_lon", "centroid_lat", "total_population"])
     tiles = tiles.dropna()
 
-    # Nearest-tile population join on a rounded grid (tiles and predictions share
-    # the same 2x2 km centroid grid, but float formatting differs).
-    for c, s in ((preds, ("lon", "lat")), (tiles, ("centroid_lon", "centroid_lat"))):
-        c["kx"] = c[s[0]].round(4)
-        c["ky"] = c[s[1]].round(4)
-    merged = preds.merge(tiles[["kx", "ky", "total_population"]], on=["kx", "ky"], how="inner")
-    print(f"  joined population for {len(merged)}/{len(preds)} tiles")
+    # Join each tile's population to its prediction on the shared 2 km grid,
+    # matching plot_nigeria_access_hotspots.py (round to 5 decimals, tile-based),
+    # so the bootstrap point burden equals the value reported in the figure/table.
+    preds["kx"] = preds["lon"].round(5)
+    preds["ky"] = preds["lat"].round(5)
+    tiles["kx"] = tiles["centroid_lon"].round(5)
+    tiles["ky"] = tiles["centroid_lat"].round(5)
+    merged = tiles.merge(preds[["kx", "ky", "p_access_raw"]], on=["kx", "ky"], how="inner")
+    merged = merged.rename(columns={"centroid_lon": "lon", "centroid_lat": "lat"})
+    print(f"  joined predictions for {len(merged)}/{len(tiles)} tiles")
     if merged.empty:
         raise SystemExit("population join produced no rows; check the centroid grids")
     merged["population"] = merged["total_population"].clip(lower=0)
