@@ -7,6 +7,7 @@ system access across Africa using satellite imagery and self-supervised
 learning**
 
 Paper: https://doi.org/10.1016/j.wroa.2026.100600
+
 Arxiv: https://arxiv.org/abs/2411.19093
 
 The framework learns self-supervised representations of Sentinel-2 imagery,
